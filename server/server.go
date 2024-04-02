@@ -3,26 +3,21 @@ package main
 import (
 	"embed"
 	"fmt"
-	"html/template"
-	"log"
+	"io/fs"
 	"net/http"
 	"server/logging"
 )
 
 //go:embed templs
+//go:embed dist
 var templFS embed.FS
 
 func main() {
 	router := http.NewServeMux()
 
-	index, err := template.ParseFS(templFS, "templs/index.html")
-	if (err != nil) {
-		log.Fatalln("Err: ", err)
-	}
+	dist, _ := fs.Sub(templFS, "dist")
 
-	router.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		index.Execute(w, "")
-	})
+	router.Handle("GET /", http.FileServer(http.FS(dist)))
 
 	server := http.Server{
 		Addr:    ":8080",
