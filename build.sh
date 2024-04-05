@@ -9,8 +9,8 @@ verbose=0
 
 while getopts "r" opt; do
   case "$opt" in
-      r)  cd ~/praktik/diplom/front/vite-project/ && npm run watch &
-          cd ~/praktik/diplom/server/ && ~/go/bin/air
+      r)  cd ./front/vite-project/ && npm run watch &
+          cd ./server/ && ~/go/bin/air
       ;;
   esac
 done
