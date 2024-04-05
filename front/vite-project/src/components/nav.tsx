@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 export function Nav() {
   const [navClosed, setNavClosed] = useState(false);
@@ -21,6 +22,7 @@ export function Nav() {
             </button>
           </div>
           <h2 className="text-xl">Lorem ipsum</h2>
+          <Link to={`/about`}>About</Link>
         </div>
       </div>
       <button className={`lg:hidden`} onClick={() => setNavClosed(!navClosed)}>
