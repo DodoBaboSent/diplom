@@ -10,7 +10,7 @@ export function Nav() {
         className={`${navClosed ? `fixed animate-slide-in h-[100%] flex flex-col` : `absolute w-[0px] overflow-hidden`}  z-50`}
       >
         <div
-          className={`align-center whitespace-nowrap drop-shadow-[0_45px_45px_rgba(0,0,0,0.55)] overflow-hidden h-[100%] justify-start p-3 bg-slate-500 p-3 w-[75%]`}
+          className={`align-center flex flex-col whitespace-nowrap drop-shadow-[0_45px_45px_rgba(0,0,0,0.55)] overflow-hidden h-[100%] justify-start p-3 bg-slate-500 p-3 w-[75%]`}
         >
           <div className="flex flex-row mb-3">
             <h1 className="text-2xl basis-11/12 font-bold">Nav</h1>

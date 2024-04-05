@@ -9,6 +9,14 @@ export function App() {
       <Routes>
         <Route path="/" element={<Root />}></Route>
         <Route path="/about" element={<About />}></Route>
+        <Route
+          path="/piska"
+          element={
+            <>
+              <h1>Piska</h1>
+            </>
+          }
+        ></Route>
       </Routes>
     </BrowserRouter>
   );
