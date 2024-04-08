@@ -24,7 +24,9 @@ export function Nav(props: NavProps) {
             </button>
           </div>
           <h2 className="text-xl">Lorem ipsum</h2>
-          <Link to={`/about`}>About</Link>
+          <Link to={`/about`} onClick={() => props.onClick(!props.isClosed)}>
+            About
+          </Link>
         </div>
       </div>
     </>

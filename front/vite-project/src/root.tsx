@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Nav } from "./components/nav";
+import Breadcrumbs from "./components/breadcrumbs";
+import { Outlet } from "react-router-dom";
 
 export function Root() {
   const [navClosed, setNavClosed] = useState(false);
@@ -15,28 +17,25 @@ export function Root() {
           <div className="basis-11/12 p-3">
             <h1 className="text-3xl font-bold">WebSite</h1>
           </div>
-          <div className="p-3 basis-1/12">
-            <button
-              className={`lg:hidden`}
-              onClick={() => setNavClosed(!navClosed)}
-            >
+          <div className={`p-3 basis-1/12 lg:hidden flex flex-row gap-3`}>
+            <button onClick={() => setNavClosed(!navClosed)}>
               <svg width={`24`} height={`24`}>
                 <path
                   d="M5 6h14M5 12h14M5 18h14"
                   fill="none"
                   stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
+                  strokeWidth="2"
+                  strokeLinecap="round"
                 ></path>
               </svg>
             </button>
+            <Breadcrumbs />
           </div>
         </div>
         <div
-          className={`items-center justify-start flex flex-col p-3 lg:col-start-1 lg:col-end-2 col-start-1 col-end-3`}
+          className={`items-center justify-start flex flex-col p-3 lg:col-end-2 col-start-1 col-end-3`}
         >
-          <h1 className="text-3xl font-bold underline">Hello world!</h1>
-          <div>sdasdasdasdasdasdasdasdasda</div>
+          <Outlet />
         </div>
         <div className="hidden lg:flex lg:flex-col lg:justify-start lg:items-center">
           <h1 className="text-3xl font-bold">Nav</h1>

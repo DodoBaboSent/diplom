@@ -1,25 +1,30 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./App.css";
 import { Root } from "./root";
 import { About } from "./About";
+import { Link, RouterProvider, createBrowserRouter } from "react-router-dom";
+import Home from "./Home";
 
 export function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Root />}></Route>
-        <Route path="/about" element={<About />}></Route>
-        <Route
-          path="/piska"
-          element={
-            <>
-              <h1>Piska</h1>
-            </>
-          }
-        ></Route>
-      </Routes>
-    </BrowserRouter>
-  );
+  const router = createBrowserRouter([
+    {
+      path: "/",
+      element: <Root />,
+      handle: {},
+      children: [
+        {
+          path: "about",
+          element: <About />,
+          handle: { crumb: () => <Link to="/about">About</Link> },
+        },
+        {
+          index: true,
+          element: <Home />,
+          handle: {},
+        },
+      ],
+    },
+  ]);
+  return <RouterProvider router={router} />;
 }
 
 export default App;
