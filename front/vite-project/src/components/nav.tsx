@@ -6,6 +6,8 @@ type NavProps = {
 };
 
 export function Nav(props: NavProps) {
+  const closeNav = () => props.onClick(!props.isClosed);
+
   return (
     <>
       <div
@@ -24,8 +26,11 @@ export function Nav(props: NavProps) {
             </button>
           </div>
           <h2 className="text-xl">Lorem ipsum</h2>
-          <Link to={`/about`} onClick={() => props.onClick(!props.isClosed)}>
+          <Link to={`/about`} onClick={closeNav}>
             About
+          </Link>
+          <Link to={`/login`} onClick={closeNav}>
+            Login
           </Link>
         </div>
       </div>

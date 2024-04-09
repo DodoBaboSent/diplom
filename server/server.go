@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"server/TemplFS"
 	"server/auth"
+	"server/database"
 	"server/logging"
 )
 
@@ -14,11 +15,13 @@ func main() {
 
 	dist, _ := fs.Sub(TemplFS.TemplFS, "dist")
 
+	database.InitDB()
+
 	stack := logging.CreateStack(
 		logging.Logging,
 	)
 
-	router.Handle("GET /{$}", logging.WrapHandler(http.FileServer(http.FS(dist))))
+	router.Handle("/", logging.WrapHandler(http.FileServer(http.FS(dist))))
 	router.HandleFunc("POST /jwt", auth.AuthJWT)
 	router.HandleFunc("GET /refresh", auth.RefreshJWT)
 

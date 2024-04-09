@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"server/database"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -14,11 +15,6 @@ var jwtKey = []byte("my_secret_key")
 type Credentials struct {
 	Password string `json:"password"`
 	Username string `json:"username"`
-}
-
-var users = map[string]string{
-	"user1": "password1",
-	"user2": "password2",
 }
 
 type Claims struct {
@@ -34,13 +30,19 @@ func AuthJWT(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "No creds")
 		return
 	}
-	expectedPass, ok := users[creds.Username]
-	if !ok || expectedPass != creds.Password {
+
+	var result database.User
+	if err := database.Database.Model(database.User{Username: creds.Username}).First(&result).Error; err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprintln(w, "Bad creds")
 		return
 	}
-	expirTime := time.Now().Add(5 * time.Minute)
+	expectedPass := result.Password
+	if expectedPass != creds.Password {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	expirTime := time.Now().Add(24 * 5 * time.Hour)
 	claims := &Claims{
 		Username: creds.Username,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -87,11 +89,8 @@ func RefreshJWT(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	if time.Until(claims.ExpiresAt.Time) > 30*time.Second {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	expirTime := time.Now().Add(5 * time.Minute)
+
+	expirTime := time.Now().Add(24 * 5 * time.Hour)
 	claims.ExpiresAt = jwt.NewNumericDate(expirTime)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtKey)
