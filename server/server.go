@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"net/http"
 	"server/TemplFS"
+	"server/auth"
 	"server/logging"
 )
 
@@ -15,10 +16,11 @@ func main() {
 
 	stack := logging.CreateStack(
 		logging.Logging,
-		logging.WrapHandler,
 	)
 
-	router.Handle("GET /", http.FileServer(http.FS(dist)))
+	router.Handle("GET /{$}", logging.WrapHandler(http.FileServer(http.FS(dist))))
+	router.HandleFunc("POST /jwt", auth.AuthJWT)
+	router.HandleFunc("GET /refresh", auth.RefreshJWT)
 
 	server := http.Server{
 		Addr:    ":8080",
