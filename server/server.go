@@ -8,6 +8,7 @@ import (
 	"server/auth"
 	"server/database"
 	"server/logging"
+	"server/owm"
 )
 
 func main() {
@@ -24,6 +25,7 @@ func main() {
 	router.Handle("/", logging.WrapHandler(http.FileServer(http.FS(dist))))
 	router.HandleFunc("POST /jwt", auth.AuthJWT)
 	router.HandleFunc("GET /refresh", auth.RefreshJWT)
+	router.HandleFunc("GET /weather", owm.HandleReq)
 
 	server := http.Server{
 		Addr:    ":8080",
