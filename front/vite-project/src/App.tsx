@@ -13,21 +13,22 @@ import {
 import axios from "axios";
 import Login from "./Login";
 import UserPanel from "./UserPanel";
+import Cookies from "universal-cookie";
 
-export let rootLoader = makeLoader(async function () {
-  let isSuccess;
-  const data: { id: string; name: string; username: string }[] = await axios
-    .get("https://jsonplaceholder.typicode.com/users")
-    .then((response) => {
-      isSuccess = true;
-      return response.data;
-    });
+const cookies = new Cookies();
 
-  if (isSuccess) {
-    return { data };
-  } else {
-    return null;
+export let LoginLoader = makeLoader(async function () {
+  const tkn: string = cookies.get("token");
+  if (tkn == "" || tkn == null || tkn.length == 0) {
+    return redirect("/login");
   }
+  const data = await axios.get("/refresh");
+  if (data.status == 200) {
+    return redirect("/panel");
+  } else {
+    return redirect("/login");
+  }
+  return null;
 });
 
 export let PanelLoader = makeLoader(async function () {
@@ -45,15 +46,18 @@ export let LoginAction = makeAction(async function ({
   const username = formData.get("username");
   const password = formData.get("password");
   let success = false;
-  await axios
-    .post("/jwt", {
-      username: username,
-      password: password,
-    })
-    .then(() => {
-      success = true;
-      redirect("/panel");
-    });
+  try {
+    await axios
+      .post("/jwt", {
+        username: username,
+        password: password,
+      })
+      .then(() => {
+        success = true;
+      });
+  } catch (err) {
+    console.log(err);
+  }
   if (success) {
     console.log("success");
     return redirect("/panel");
@@ -78,13 +82,13 @@ function App() {
           index: true,
           element: <Home />,
           handle: {},
-          loader: rootLoader,
         },
         {
           path: "login",
           element: <Login />,
           handle: { crumb: () => <Link to="/login">Login</Link> },
           action: LoginAction,
+          loader: LoginLoader,
         },
         {
           path: "panel",

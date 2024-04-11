@@ -1,5 +1,3 @@
-import { useLoaderData } from "react-router-typesafe";
-import { rootLoader } from "./App";
 import axios from "axios";
 import { useEffect, useState } from "react";
 
@@ -52,9 +50,15 @@ const options = {
 };
 
 function Home() {
-  useLoaderData<typeof rootLoader>();
-
   const [weather, setWeather] = useState<OWMRes>();
+
+  function getForecast() {
+    axios
+      .get(
+        `https://api.openweathermap.org/data/2.5/forecast?lat=${weather?.coord.lat}&lon=${weather?.coord.lon}&appid=8d18c932ed780f3962e2d6b27bd6cec4&units=metric&lang=ru&cnt=5`,
+      )
+      .then((res) => console.log(res.data));
+  }
 
   useEffect(() => {
     async function getWeather() {
@@ -104,12 +108,12 @@ function Home() {
   return (
     <>
       <div className={`divide-y`}>
-        <h1 className={`text-3xl font-bold`}>Температура в вашем городе</h1>
-        <div
-          className={`flex-col flex gap-2 ${!weather ? `hidden` : ``}`}
-        >
-          <div className={`gap-2 flex w-[75%] flex-col`}>
-            <div>
+        <h1 className={`text-2xl lg:text-3xl font-bold py-3`}>
+          Температура в вашем городе
+        </h1>
+        <div className={`flex-col flex gap-2 ${!weather ? `hidden` : ``}`}>
+          <div className={`gap-2 flex w-[100%] lg:w-[75%] flex-col`}>
+            <div className={`backdrop-blur-sm`}>
               <h1 className={`text-3xl font-bold mt-2`}>
                 {weather?.name}, {weather?.sys.country}
               </h1>
@@ -119,25 +123,35 @@ function Home() {
               </h2>
             </div>
             <div
-              className={`p-3 rounded border flex flex-col ${weather?.weather.find((el) => el.main == "Clouds" || el.main == "Rain") ? `bg-slate-200` : ``} ${weather?.weather.find((el) => el.main == "Clear") ? `bg-amber-100` : ``} ${weather?.weather.find((el) => el.main == "Snow") ? `bg-white` : ``}`}
+              className={`p-3 rounded border backdrop-blur-sm flex flex-col`}
             >
               <div className={`flex flex-row`}>
                 <div className={`flex gap-3 flex-col`}>
-                  <h1 className={`text-3xl font-bold`}>
-                    {weather ? (
-                      <>
-                        <img
-                          src={`https://openweathermap.org/img/wn/${weather?.weather[0].icon}.png`}
-                          alt={`weather_icon`}
-                          className={`inline-block`}
-                        />
-                      </>
-                    ) : (
-                      <></>
-                    )}
-                    {weather?.main.temp} {weather?.Unit == "metric" ? `°C` : ``}
-                    {weather?.Unit == "imperial" ? `°F` : ``}
-                  </h1>
+                  <div className={`flex flex-row justify-between`}>
+                    <h1 className={`text-3xl font-bold`}>
+                      {weather ? (
+                        <>
+                          <img
+                            src={`https://openweathermap.org/img/wn/${weather?.weather[0].icon}.png`}
+                            alt={`weather_icon`}
+                            className={`inline-block`}
+                          />
+                        </>
+                      ) : (
+                        <></>
+                      )}
+                      {weather?.main.temp}{" "}
+                      {weather?.Unit == "metric" ? `°C` : ``}
+                      {weather?.Unit == "imperial" ? `°F` : ``}
+                    </h1>
+                    <h2 className={`text-lg text-amber-500`}>
+                      Время замера:
+                      <br />
+                      {new Date(weather?.dt! * 1000).toLocaleTimeString(
+                        new Intl.Locale("ru"),
+                      )}
+                    </h2>
+                  </div>
                   <div className={`p-3 flex-row flex gap-3`}>
                     <div>
                       <p>
@@ -148,7 +162,9 @@ function Home() {
                           className={`inline-block`}
                           width={15}
                           height={15}
-                          style={{ transform: "weather?.wind.deg" }}
+                          style={{
+                            transform: `rotate(${weather?.wind.deg}deg)`,
+                          }}
                         >
                           <g data-v-47880d39="" fill="#48484a">
                             <path
@@ -208,8 +224,11 @@ function Home() {
               </div>
             </div>
           </div>
-          </div>
-        <div className={`flex flex-col ${!weather ? `` : `hidden`}`}>
+          <button onClick={() => getForecast()}>Prognoz</button>
+        </div>
+        <div
+          className={`flex flex-col justify-center items-center py-3 ${!weather ? `` : `hidden`}`}
+        >
           <svg
             fill="#000000"
             className={`animate-spin`}
