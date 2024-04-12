@@ -54,9 +54,12 @@ function Home() {
 
   function getForecast() {
     axios
-      .get(
-        `https://api.openweathermap.org/data/2.5/forecast?lat=${weather?.coord.lat}&lon=${weather?.coord.lon}&appid=8d18c932ed780f3962e2d6b27bd6cec4&units=metric&lang=ru&cnt=5`,
-      )
+      .get(`/forecast`, {
+        params: {
+          longtitude: weather?.coord.lon,
+          latitude: weather?.coord.lat,
+        },
+      })
       .then((res) => console.log(res.data));
   }
 
