@@ -12,7 +12,7 @@ export function Root() {
         className={`grid-rows-[fit-content(100px)_1fr_auto] grid-cols-[[start-content]_2fr_[end-content_start-nav]_1fr_[end-nav]] h-[100vh] grid ${navClosed ? `animate-blur-in` : `blur-none`} divide-y`}
       >
         <div
-          className={`col-start-1 col-end-3 flex bg-white flex-col sticky top-0 px-3 divide-y`}
+          className={`col-start-1 col-end-3 flex bg-white flex-col sticky z-50 top-0 px-3 divide-y`}
         >
           <div className="basis-11/12 p-3">
             <h1 className="text-3xl font-bold">WebSite</h1>

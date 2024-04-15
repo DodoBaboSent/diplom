@@ -11,7 +11,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var OWMAPIKey string
+var owmApiKey string
 
 func getWeatherLongLat(longtitude, latitude float64) *owm.CurrentWeatherData {
 
@@ -19,9 +19,9 @@ func getWeatherLongLat(longtitude, latitude float64) *owm.CurrentWeatherData {
 	if err != nil {
 		log.Fatalln("Error loading .env file")
 	}
-	OWMAPIKey = os.Getenv("OWM_API_KEY")
+	owmApiKey = os.Getenv("OWM_API_KEY")
 
-	w, err := owm.NewCurrent("C", "ru", OWMAPIKey)
+	w, err := owm.NewCurrent("C", "ru", owmApiKey)
 	if err != nil {
 		log.Fatalln(err)
 	}

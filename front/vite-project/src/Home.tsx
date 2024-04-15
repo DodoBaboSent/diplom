@@ -1,4 +1,5 @@
 import axios from "axios";
+import { format } from "date-fns";
 import { useEffect, useState } from "react";
 
 type OWMRes = {
@@ -39,6 +40,13 @@ type OWMRes = {
   Unit: string;
 };
 
+type OWMForecast = {
+  cod: string;
+  message: string;
+  cnt: number;
+  list: OWMRes[];
+};
+
 function error(err: GeolocationPositionError) {
   console.warn(`ERROR(${err.code}): ${err.message}`);
 }
@@ -51,16 +59,17 @@ const options = {
 
 function Home() {
   const [weather, setWeather] = useState<OWMRes>();
+  const [forecast, setForecast] = useState<OWMForecast>();
 
   function getForecast() {
     axios
-      .get(`/forecast`, {
+      .get<OWMForecast>(`/forecast`, {
         params: {
           longtitude: weather?.coord.lon,
           latitude: weather?.coord.lat,
         },
       })
-      .then((res) => console.log(res.data));
+      .then((res) => setForecast(res.data));
   }
 
   useEffect(() => {
@@ -110,12 +119,14 @@ function Home() {
 
   return (
     <>
-      <div className={`divide-y`}>
+      <div className={`divide-y flex flex-col basis-full w-[100%]`}>
         <h1 className={`text-2xl lg:text-3xl font-bold py-3`}>
           Температура в вашем городе
         </h1>
-        <div className={`flex-col flex gap-2 ${!weather ? `hidden` : ``}`}>
-          <div className={`gap-2 flex w-[100%] lg:w-[75%] flex-col`}>
+        <div
+          className={`flex-col flex gap-2 w-[100%] ${!weather ? `hidden` : ``}`}
+        >
+          <div className={`gap-2 flex w-[100%] lg:w-[100%] flex-col`}>
             <div className={`backdrop-blur-sm`}>
               <h1 className={`text-3xl font-bold mt-2`}>
                 {weather?.name}, {weather?.sys.country}
@@ -126,10 +137,10 @@ function Home() {
               </h2>
             </div>
             <div
-              className={`p-3 rounded border backdrop-blur-sm flex flex-col`}
+              className={`p-3 rounded border backdrop-blur-sm flex flex-col bg-violet-200`}
             >
-              <div className={`flex flex-row`}>
-                <div className={`flex gap-3 flex-col`}>
+              <div className={`flex flex-row w-[100%] basis-full`}>
+                <div className={`flex gap-3 basis-full flex-col`}>
                   <div className={`flex flex-row justify-between`}>
                     <h1 className={`text-3xl font-bold`}>
                       {weather ? (
@@ -227,7 +238,70 @@ function Home() {
               </div>
             </div>
           </div>
-          <button onClick={() => getForecast()}>Prognoz</button>
+          <button
+            className={`${!forecast ? `` : `hidden`}`}
+            onClick={() => getForecast()}
+          >
+            Запросить прогноз
+          </button>
+          <div className={`${forecast ? `` : `hidden`} flex w-[100%] flex-col`}>
+            {forecast?.list.map((el) => {
+              return (
+                <>
+                  <div
+                    className={`flex flex-row border divide-y bg-violet-200 rounded w-[100%]`}
+                  >
+                    <div className={`basis-4/12 flex flex-row`}>
+                      <img
+                        src={`https://openweathermap.org/img/wn/${el.weather[0].icon}.png`}
+                        alt="icon"
+                      />
+                      <p className={`text-center`}>
+                        {el.weather[0].description}
+                      </p>
+                    </div>
+                    <h3 className={`text-3xl text-center font-bold basis-4/12`}>
+                      {format(new Date(el.dt * 1000), "kk:mm")}
+                    </h3>
+                    <div className={`basis-4/12`}>
+                      <h3 className={`text-2xl text-center font-bold`}>
+                        {el.main.temp} °C
+                      </h3>
+                      <p className={`text-center`}>
+                        Влажность: {el.main.humidity}%
+                      </p>
+                      <p className={`text-center`}>
+                        Ветер:{" "}
+                        <svg
+                          viewBox="0 0 1000 1000"
+                          enable-background="new 0 0 1000 1000"
+                          xmlSpace="preserve"
+                          className={`inline-block`}
+                          width={15}
+                          height={15}
+                          style={{
+                            transform: `rotate(${el.wind.deg}deg)`,
+                          }}
+                        >
+                          <g data-v-47880d39="" fill="#48484a">
+                            <path
+                              data-v-47880d39=""
+                              d="M510.5,749.6c-14.9-9.9-38.1-9.9-53.1,1.7l-262,207.3c-14.9,11.6-21.6,6.6-14.9-11.6L474,48.1c5-16.6,14.9-18.2,21.6,0l325,898.7c6.6,16.6-1.7,23.2-14.9,11.6L510.5,749.6z"
+                            ></path>
+                            <path
+                              data-v-47880d39=""
+                              d="M817.2,990c-8.3,0-16.6-3.3-26.5-9.9L497.2,769.5c-5-3.3-18.2-3.3-23.2,0L210.3,976.7c-19.9,16.6-41.5,14.9-51.4,0c-6.6-9.9-8.3-21.6-3.3-38.1L449.1,39.8C459,13.3,477.3,10,483.9,10c6.6,0,24.9,3.3,34.8,29.8l325,898.7c5,14.9,5,28.2-1.7,38.1C837.1,985,827.2,990,817.2,990z M485.6,716.4c14.9,0,28.2,5,39.8,11.6l255.4,182.4L485.6,92.9l-267,814.2l223.9-177.4C454.1,721.4,469,716.4,485.6,716.4z"
+                            ></path>
+                          </g>
+                        </svg>{" "}
+                        {el.wind.speed} м/с
+                      </p>
+                    </div>
+                  </div>
+                </>
+              );
+            })}
+          </div>
         </div>
         <div
           className={`flex flex-col justify-center items-center py-3 ${!weather ? `` : `hidden`}`}
