@@ -9,6 +9,15 @@ type User struct {
 	gorm.Model
 	Username string `gorm:"unique"`
 	Password string
+	Lon      string
+	Lat      string
+	Cities   []City
+}
+
+type City struct {
+	gorm.Model
+	Name   string
+	UserID uint
 }
 
 var Database *gorm.DB
@@ -20,5 +29,6 @@ func InitDB() {
 		panic("failed to connect database")
 	}
 	Database.AutoMigrate(&User{})
-	Database.Create(&User{Username: "admin", Password: "password"})
+	Database.AutoMigrate(&City{})
+	Database.Create(&User{Username: "admin", Password: "password", Lon: "135.0551", Lat: "48.4627"})
 }

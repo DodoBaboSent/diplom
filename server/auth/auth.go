@@ -10,7 +10,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtKey = []byte("my_secret_key")
+var JWTKey = []byte("my_secret_key")
 
 type Credentials struct {
 	Password string `json:"password"`
@@ -50,7 +50,7 @@ func AuthJWT(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(jwtKey)
+	tokenString, err := token.SignedString(JWTKey)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -59,6 +59,53 @@ func AuthJWT(w http.ResponseWriter, r *http.Request) {
 		Name:    "token",
 		Value:   tokenString,
 		Expires: expirTime,
+	})
+}
+
+func RefreshTokenMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, err := r.Cookie("token")
+		if err != nil {
+			if err == http.ErrNoCookie {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		tknStr := c.Value
+		claims := &Claims{}
+		tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (any, error) {
+			return JWTKey, nil
+		})
+		if err != nil {
+			if err == jwt.ErrSignatureInvalid {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if !tkn.Valid {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		expirTime := time.Now().Add(24 * 5 * time.Hour)
+		claims.ExpiresAt = jwt.NewNumericDate(expirTime)
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenString, err := token.SignedString(JWTKey)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:    "token",
+			Value:   tokenString,
+			Path:    "/",
+			Expires: expirTime,
+		})
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -75,7 +122,7 @@ func RefreshJWT(w http.ResponseWriter, r *http.Request) {
 	tknStr := c.Value
 	claims := &Claims{}
 	tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (any, error) {
-		return jwtKey, nil
+		return JWTKey, nil
 	})
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
@@ -93,7 +140,7 @@ func RefreshJWT(w http.ResponseWriter, r *http.Request) {
 	expirTime := time.Now().Add(24 * 5 * time.Hour)
 	claims.ExpiresAt = jwt.NewNumericDate(expirTime)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(jwtKey)
+	tokenString, err := token.SignedString(JWTKey)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

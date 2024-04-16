@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Nav } from "./components/nav";
 import Breadcrumbs from "./components/breadcrumbs";
-import { Outlet } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 
 export function Root() {
   const [navClosed, setNavClosed] = useState(false);
@@ -14,8 +14,13 @@ export function Root() {
         <div
           className={`col-start-1 col-end-3 flex bg-white flex-col sticky z-50 top-0 px-3 divide-y`}
         >
-          <div className="basis-11/12 p-3">
+          <div className="basis-11/12 flex flex-row gap-3 p-3">
             <h1 className="text-3xl font-bold">WebSite</h1>
+            <div
+              className={`hidden lg:flex lg:flex-row lg:text-2xl lg:items-center`}
+            >
+              <Breadcrumbs />
+            </div>
           </div>
           <div className={`p-3 basis-1/12 lg:hidden flex flex-row gap-3`}>
             <button onClick={() => setNavClosed(!navClosed)}>
@@ -37,8 +42,19 @@ export function Root() {
         >
           <Outlet />
         </div>
-        <div className="hidden lg:flex lg:flex-col lg:justify-start lg:items-center">
-          <h1 className="text-3xl font-bold">Nav</h1>
+        <div className="hidden lg:flex lg:flex-col lg:justify-start gap-4 lg:items-center">
+          <h1 className="text-3xl font-bold">Navigation</h1>
+          <ol className={`flex flex-col gap-2 text-xl`}>
+            <li>
+              <Link to="/about">About</Link>
+            </li>
+            <li>
+              <Link to="/login">User</Link>
+            </li>
+            <li>
+              <Link to="/search">Search</Link>
+            </li>
+          </ol>
         </div>
         <div className="bg-amber-500 col-start-1 col-end-3"></div>
       </div>

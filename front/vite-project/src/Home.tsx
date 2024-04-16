@@ -1,6 +1,8 @@
 import axios from "axios";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
+import { useLoaderData } from "react-router-typesafe";
+import { IndexLoader } from "./App";
 
 type OWMRes = {
   coord: { lat: number; lon: number };
@@ -58,8 +60,10 @@ const options = {
 };
 
 function Home() {
+  const data = useLoaderData<typeof IndexLoader>();
   const [weather, setWeather] = useState<OWMRes>();
   const [forecast, setForecast] = useState<OWMForecast>();
+  const [stars, setStars] = useState<OWMRes[]>();
 
   function getForecast() {
     axios
@@ -112,8 +116,43 @@ function Home() {
           }
         });
     }
+    function getWeatherForStars(data: { cities: any[] }) {
+      let array: Promise<OWMRes>[] = [];
+      data.cities.forEach(async (el) => {
+        const data = axios
+          .get<OWMRes>("/weather", {
+            params: {
+              city: el.Name,
+            },
+          })
+          .then((res) => res.data);
+        array.push(data);
+      });
+      Promise.all(array!).then((res) => setStars(res));
+    }
+    async function getWeatherData(data: { lat: number; lon: number }) {
+      await axios
+        .get("/weather", {
+          params: {
+            longtitude: data.lon,
+            latitude: data.lat,
+          },
+        })
+        .then((res) => {
+          setWeather(res.data);
+        });
+    }
     if (!weather) {
-      getWeather();
+      if (!data.prefs) {
+        getWeather();
+      } else {
+        console.log("fetching from saved pref...");
+        getWeatherData(data.prefs);
+      }
+    }
+
+    if (!stars) {
+      getWeatherForStars(data.stars);
     }
   }, []);
 
@@ -124,7 +163,7 @@ function Home() {
           Температура в вашем городе
         </h1>
         <div
-          className={`flex-col flex gap-2 w-[100%] ${!weather ? `hidden` : ``}`}
+          className={`flex-col flex gap-2 mb-2 w-[100%] ${!weather ? `hidden` : ``}`}
         >
           <div className={`gap-2 flex w-[100%] lg:w-[100%] flex-col`}>
             <div className={`backdrop-blur-sm`}>
@@ -137,7 +176,7 @@ function Home() {
               </h2>
             </div>
             <div
-              className={`p-3 rounded border backdrop-blur-sm flex flex-col bg-violet-200`}
+              className={`p-3 rounded border backdrop-blur-sm flex flex-col bg-yellow-200`}
             >
               <div className={`flex flex-row w-[100%] basis-full`}>
                 <div className={`flex gap-3 basis-full flex-col`}>
@@ -158,7 +197,7 @@ function Home() {
                       {weather?.Unit == "metric" ? `°C` : ``}
                       {weather?.Unit == "imperial" ? `°F` : ``}
                     </h1>
-                    <h2 className={`text-lg text-amber-500`}>
+                    <h2 className={`text-lg`}>
                       Время замера:
                       <br />
                       {new Date(weather?.dt! * 1000).toLocaleTimeString(
@@ -239,24 +278,27 @@ function Home() {
             </div>
           </div>
           <button
-            className={`${!forecast ? `` : `hidden`}`}
+            className={`${!forecast ? `` : `hidden`} rounded bg-sky-500 text-white text-bold`}
             onClick={() => getForecast()}
           >
             Запросить прогноз
           </button>
-          <div className={`${forecast ? `` : `hidden`} flex w-[100%] flex-col`}>
+          <div
+            className={`${forecast ? `` : `hidden`} flex gap-2 w-[100%] flex-col`}
+          >
             {forecast?.list.map((el) => {
               return (
                 <>
                   <div
-                    className={`flex flex-row border divide-y bg-violet-200 rounded w-[100%]`}
+                    className={`flex flex-row border divide-y bg-yellow-200 rounded w-[100%]`}
                   >
                     <div className={`basis-4/12 flex flex-row`}>
                       <img
                         src={`https://openweathermap.org/img/wn/${el.weather[0].icon}.png`}
                         alt="icon"
+                        className={`h-[50px] w-[50px] self-center`}
                       />
-                      <p className={`text-center`}>
+                      <p className={`text-center self-center`}>
                         {el.weather[0].description}
                       </p>
                     </div>
@@ -332,6 +374,133 @@ function Home() {
               </g>{" "}
             </g>
           </svg>
+        </div>
+        <h2 className={`text-3xl font-bold`}>
+          Температура в отслеживаемых городах
+        </h2>
+        <div>
+          {stars ? (
+            stars?.map((el) => {
+              return (
+                <>
+                  <div className={`gap-2 flex w-[100%] lg:w-[100%] flex-col`}>
+                    <div className={`backdrop-blur-sm`}>
+                      <h1 className={`text-3xl font-bold mt-2`}>
+                        {el?.name}, {el?.sys.country}
+                      </h1>
+                      <h2 className={`text-xl font-bold`}>
+                        Чувствуется как {el?.main.feels_like}°C,{" "}
+                        {el?.weather.map((el) => <>{el.description}</>)}
+                      </h2>
+                    </div>
+                    <div
+                      className={`p-3 rounded border backdrop-blur-sm flex flex-col bg-yellow-200`}
+                    >
+                      <div className={`flex flex-row w-[100%] basis-full`}>
+                        <div className={`flex gap-3 basis-full flex-col`}>
+                          <div className={`flex flex-row justify-between`}>
+                            <h1 className={`text-3xl font-bold`}>
+                              {weather ? (
+                                <>
+                                  <img
+                                    src={`https://openweathermap.org/img/wn/${el?.weather[0].icon}.png`}
+                                    alt={`weather_icon`}
+                                    className={`inline-block`}
+                                  />
+                                </>
+                              ) : (
+                                <></>
+                              )}
+                              {weather?.main.temp}{" "}
+                              {weather?.Unit == "metric" ? `°C` : ``}
+                              {weather?.Unit == "imperial" ? `°F` : ``}
+                            </h1>
+                            <h2 className={`text-lg`}>
+                              Время замера:
+                              <br />
+                              {new Date(el?.dt! * 1000).toLocaleTimeString(
+                                new Intl.Locale("ru"),
+                              )}
+                            </h2>
+                          </div>
+                          <div className={`p-3 flex-row flex gap-3`}>
+                            <div>
+                              <p>
+                                <svg
+                                  viewBox="0 0 1000 1000"
+                                  enable-background="new 0 0 1000 1000"
+                                  xmlSpace="preserve"
+                                  className={`inline-block`}
+                                  width={15}
+                                  height={15}
+                                  style={{
+                                    transform: `rotate(${el?.wind.deg}deg)`,
+                                  }}
+                                >
+                                  <g data-v-47880d39="" fill="#48484a">
+                                    <path
+                                      data-v-47880d39=""
+                                      d="M510.5,749.6c-14.9-9.9-38.1-9.9-53.1,1.7l-262,207.3c-14.9,11.6-21.6,6.6-14.9-11.6L474,48.1c5-16.6,14.9-18.2,21.6,0l325,898.7c6.6,16.6-1.7,23.2-14.9,11.6L510.5,749.6z"
+                                    ></path>
+                                    <path
+                                      data-v-47880d39=""
+                                      d="M817.2,990c-8.3,0-16.6-3.3-26.5-9.9L497.2,769.5c-5-3.3-18.2-3.3-23.2,0L210.3,976.7c-19.9,16.6-41.5,14.9-51.4,0c-6.6-9.9-8.3-21.6-3.3-38.1L449.1,39.8C459,13.3,477.3,10,483.9,10c6.6,0,24.9,3.3,34.8,29.8l325,898.7c5,14.9,5,28.2-1.7,38.1C837.1,985,827.2,990,817.2,990z M485.6,716.4c14.9,0,28.2,5,39.8,11.6l255.4,182.4L485.6,92.9l-267,814.2l223.9-177.4C454.1,721.4,469,716.4,485.6,716.4z"
+                                    ></path>
+                                  </g>
+                                </svg>
+                                {el?.wind.speed} м/с, {el?.wind.deg}°
+                              </p>
+                              <p>Влажность: {el?.main.humidity}%</p>
+                            </div>
+                            <div>
+                              <p>
+                                <svg
+                                  width={15}
+                                  height={15}
+                                  viewBox="0 0 96 96"
+                                  className={`inline-block`}
+                                >
+                                  <g
+                                    data-v-7bdd0738=""
+                                    transform="translate(0,96) scale(0.100000,-0.100000)"
+                                    fill="#48484a"
+                                    stroke="none"
+                                  >
+                                    <path
+                                      data-v-7bdd0738=""
+                                      d="M351 854 c-98 -35 -179 -108 -227 -202 -27 -53 -29 -65 -29 -172 0
+                              -107 2 -119 29 -172 38 -75 104 -141 180 -181 58 -31 66 -32 176 -32 110 0
+                              118 1 175 32 77 40 138 101 178 178 31 57 32 65 32 175 0 110 -1 118 -32 176
+                              -40 76 -106 142 -181 179 -49 25 -71 29 -157 32 -73 2 -112 -1 -144 -13z m259
+                              -80 c73 -34 126 -86 161 -159 24 -50 29 -73 29 -135 0 -62 -5 -85 -29 -135
+                              -57 -119 -161 -185 -291 -185 -130 0 -234 66 -291 185 -24 50 -29 73 -29 135
+                              0 130 66 234 185 291 82 40 184 41 265 3z"
+                                    ></path>
+                                    <path
+                                      data-v-7bdd0738=""
+                                      d="M545 600 c-35 -35 -68 -60 -80 -60 -27 0 -45 -18 -45 -45 0 -33 -50
+                              -75 -89 -75 -18 0 -41 -5 -53 -11 -20 -11 -20 -11 3 -35 12 -13 33 -24 46 -24
+                              17 0 23 -6 23 -23 0 -13 10 -33 23 -45 30 -28 47 -13 47 43 0 32 6 47 28 68
+                              15 15 37 27 48 27 26 0 44 18 44 44 0 12 26 47 60 81 l60 61 -28 27 -28 27
+                              -59 -60z"
+                                    ></path>
+                                  </g>
+                                </svg>
+                                {el?.main.pressure}hPa
+                              </p>
+                              <p>Видимость: {el?.visibility} метров</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              );
+            })
+          ) : (
+            <></>
+          )}
         </div>
       </div>
     </>

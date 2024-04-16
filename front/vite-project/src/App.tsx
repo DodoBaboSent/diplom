@@ -14,21 +14,53 @@ import axios from "axios";
 import Login from "./Login";
 import UserPanel from "./UserPanel";
 import Cookies from "universal-cookie";
+import Search from "./Search";
 
 const cookies = new Cookies();
+
+export let SearchAction = makeAction(async function ({
+  request,
+}: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const city = formData.get("city");
+
+  const data = await axios
+    .get("/weather", {
+      params: {
+        city: city,
+      },
+    })
+    .then((res) => res.data);
+  return data;
+});
 
 export let LoginLoader = makeLoader(async function () {
   const tkn: string = cookies.get("token");
   if (tkn == "" || tkn == null || tkn.length == 0) {
-    return redirect("/login");
+    return null;
   }
-  const data = await axios.get("/refresh");
-  if (data.status == 200) {
+  let success = false;
+  try {
+    await axios.get("/refresh").then((res) => {
+      console.log(res.status);
+      if (res.status == 200) {
+        console.log("promise success");
+        success = true;
+      } else {
+        console.log("promise fail");
+        success = false;
+      }
+    });
+  } catch (err) {
+    console.log(err);
+  }
+  if (success) {
+    console.log(success);
     return redirect("/panel");
   } else {
-    return redirect("/login");
+    console.log(success);
+    return null;
   }
-  return null;
 });
 
 export let PanelLoader = makeLoader(async function () {
@@ -37,6 +69,14 @@ export let PanelLoader = makeLoader(async function () {
     .then((res) => res.data)
     .catch(() => null);
   return data;
+});
+
+export let IndexLoader = makeLoader(async function () {
+  const prefs = await axios.get("/user/get").then((res) => res.data);
+  const stars = await axios
+    .get<{ cities: { Name: string }[] }>("/user/star")
+    .then((res) => res.data);
+  return { prefs, stars };
 });
 
 export let LoginAction = makeAction(async function ({
@@ -82,6 +122,7 @@ function App() {
           index: true,
           element: <Home />,
           handle: {},
+          loader: IndexLoader,
         },
         {
           path: "login",
@@ -95,6 +136,12 @@ function App() {
           element: <UserPanel />,
           handle: { crumb: () => <Link to="/panel">Panel</Link> },
           loader: PanelLoader,
+        },
+        {
+          path: "search",
+          element: <Search />,
+          handle: { crumb: () => <Link to="/search">Search</Link> },
+          action: SearchAction,
         },
       ],
     },
