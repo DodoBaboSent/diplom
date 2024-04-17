@@ -5,6 +5,6 @@ WORKDIR /diplom
 COPY ./server .
 
 RUN go get
-RUN go build server.go
+RUN go build
 
 CMD [ "./server" ]
