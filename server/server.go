@@ -39,7 +39,7 @@ func main() {
 	database.InitDB()
 
 	log.Println(os.Getenv("PRODUCTION"))
-	if os.Getenv("PRODUCTION") == "false" {
+	if os.Getenv("PRODUCTION") != "true" {
 		err := godotenv.Load()
 		if err != nil {
 			log.Fatalln("Error loading .env file")
