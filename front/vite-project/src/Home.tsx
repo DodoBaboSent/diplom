@@ -171,7 +171,9 @@ function Home() {
     }
 
     if (!stars) {
-      getWeatherForStars(data.stars);
+      if (data.stars) {
+        getWeatherForStars(data.stars);
+      }
     }
   }, []);
 
