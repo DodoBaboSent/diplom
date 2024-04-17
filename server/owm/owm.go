@@ -12,9 +12,12 @@ var owmApiKey string
 
 func GetWeatherLongLat(longtitude, latitude float64) *owm.CurrentWeatherData {
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalln("Error loading .env file")
+	log.Println(os.Getenv("PRODUCTION"))
+	if os.Getenv("PRODUCTION") == "false" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatalln("Error loading .env file")
+		}
 	}
 	owmApiKey = os.Getenv("OWM_API_KEY")
 
