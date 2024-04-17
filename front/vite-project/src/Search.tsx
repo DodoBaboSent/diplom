@@ -54,9 +54,17 @@ function Search() {
   const data = useActionData<typeof SearchAction>();
 
   const [weather, setWeather] = useState<OWMRes>();
+  const [hiddenAnimation, setHiddenAnimation] = useState<boolean>(true);
+  const [isError, setIsError] = useState<boolean>(false);
 
   useEffect(() => {
-    setWeather(data);
+    if (data?.coord.lat !== 0) {
+      setWeather(data);
+      setIsError(false);
+    } else {
+      setHiddenAnimation(true);
+      setIsError(true);
+    }
   }, [data]);
   return (
     <>
@@ -72,6 +80,10 @@ function Search() {
           <button
             type="submit"
             className={`bg-slate-300 basis-2/12 p-3 w-[100%]`}
+            onClick={() => {
+              setHiddenAnimation(false);
+              setWeather(undefined);
+            }}
           >
             Search
           </button>
@@ -198,7 +210,54 @@ function Search() {
             </button>
           </>
         ) : (
-          <></>
+          <>
+            {!hiddenAnimation ? (
+              <>
+                <div
+                  className={`flex flex-col justify-center items-center py-3 ${!weather ? `` : `hidden`}`}
+                >
+                  <svg
+                    fill="#000000"
+                    className={`animate-spin`}
+                    height="100px"
+                    width="100px"
+                    version="1.1"
+                    id="Capa_1"
+                    xmlns="http://www.w3.org/2000/svg"
+                    xmlnsXlink="http://www.w3.org/1999/xlink"
+                    viewBox="0 0 489.645 489.645"
+                    xmlSpace="preserve"
+                  >
+                    <g id="bgCarrier" stroke-width="0"></g>
+                    <g
+                      id="tracerCarrier"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    ></g>
+                    <g id="iconCarrier">
+                      {" "}
+                      <g>
+                        {" "}
+                        <path d="M460.656,132.911c-58.7-122.1-212.2-166.5-331.8-104.1c-9.4,5.2-13.5,16.6-8.3,27c5.2,9.4,16.6,13.5,27,8.3 c99.9-52,227.4-14.9,276.7,86.3c65.4,134.3-19,236.7-87.4,274.6c-93.1,51.7-211.2,17.4-267.6-70.7l69.3,14.5 c10.4,2.1,21.8-4.2,23.9-15.6c2.1-10.4-4.2-21.8-15.6-23.9l-122.8-25c-20.6-2-25,16.6-23.9,22.9l15.6,123.8 c1,10.4,9.4,17.7,19.8,17.7c12.8,0,20.8-12.5,19.8-23.9l-6-50.5c57.4,70.8,170.3,131.2,307.4,68.2 C414.856,432.511,548.256,314.811,460.656,132.911z"></path>{" "}
+                      </g>{" "}
+                    </g>
+                  </svg>
+                </div>
+              </>
+            ) : (
+              <>
+                {isError ? (
+                  <>
+                    <h1 className={`text-3xl font-bold text-center`}>
+                      Город не найден
+                    </h1>
+                  </>
+                ) : (
+                  <></>
+                )}
+              </>
+            )}
+          </>
         )}
       </div>
     </>

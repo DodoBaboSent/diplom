@@ -1,0 +1,3 @@
+server/tmp/
+server/.env
+front/vite-project/node_modules/

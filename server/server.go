@@ -169,19 +169,9 @@ func main() {
 		var result database.User
 		database.Database.Model(database.User{Username: name}).First(&result)
 		var resp struct {
-			Lon float64 `json:"lon"`
-			Lat float64 `json:"lat"`
+			Name string `json:"city"`
 		}
-		resp.Lat, err = strconv.ParseFloat(result.Lat, 64)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		resp.Lon, err = strconv.ParseFloat(result.Lon, 64)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		resp.Name = result.CityName
 		jsonResp, err := json.Marshal(resp)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

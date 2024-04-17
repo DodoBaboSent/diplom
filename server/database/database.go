@@ -9,8 +9,7 @@ type User struct {
 	gorm.Model
 	Username string `gorm:"unique"`
 	Password string
-	Lon      string
-	Lat      string
+	CityName string
 	Cities   []City
 }
 
@@ -30,5 +29,5 @@ func InitDB() {
 	}
 	Database.AutoMigrate(&User{})
 	Database.AutoMigrate(&City{})
-	Database.Create(&User{Username: "admin", Password: "password", Lon: "135.0551", Lat: "48.4627"})
+	Database.Create(&User{Username: "admin", Password: "password", CityName: "Хабаровск", Cities: []City{{Name: "Детройт"}, {Name: "Лондон"}, {Name: "Москва"}}})
 }

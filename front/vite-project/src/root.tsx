@@ -9,7 +9,7 @@ export function Root() {
     <>
       <Nav isClosed={navClosed} onClick={setNavClosed} />
       <div
-        className={`grid-rows-[fit-content(100px)_1fr_auto] grid-cols-[[start-content]_2fr_[end-content_start-nav]_1fr_[end-nav]] h-[100vh] grid ${navClosed ? `animate-blur-in` : `blur-none`} divide-y`}
+        className={`grid-rows-[fit-content(100px)_1fr_auto] grid-cols-[[start-content]_2fr_[end-content_start-nav]_1fr_[end-nav]] h-[100%] grid ${navClosed ? `animate-blur-in` : `blur-none`} divide-y`}
       >
         <div
           className={`col-start-1 col-end-3 flex bg-white flex-col sticky z-50 top-0 px-3 divide-y`}

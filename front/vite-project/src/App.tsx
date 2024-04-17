@@ -2,7 +2,7 @@ import "./App.css";
 import { Root } from "./root";
 import { About } from "./About";
 import { makeAction, makeLoader } from "react-router-typesafe";
-import Home from "./Home";
+import Home, { OWMRes } from "./Home";
 import {
   ActionFunctionArgs,
   Link,
@@ -18,6 +18,22 @@ import Search from "./Search";
 
 const cookies = new Cookies();
 
+export let IndexAction = makeAction(async function ({
+  request,
+}: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const city = formData.get("city");
+
+  const data = await axios
+    .get<OWMRes>("/weather", {
+      params: {
+        city: city,
+      },
+    })
+    .then((res) => res.data);
+  return data;
+});
+
 export let SearchAction = makeAction(async function ({
   request,
 }: ActionFunctionArgs) {
@@ -25,7 +41,7 @@ export let SearchAction = makeAction(async function ({
   const city = formData.get("city");
 
   const data = await axios
-    .get("/weather", {
+    .get<OWMRes>("/weather", {
       params: {
         city: city,
       },
@@ -72,7 +88,9 @@ export let PanelLoader = makeLoader(async function () {
 });
 
 export let IndexLoader = makeLoader(async function () {
-  const prefs = await axios.get("/user/get").then((res) => res.data);
+  const prefs = await axios
+    .get<{ city: string }>("/user/get")
+    .then((res) => res.data);
   const stars = await axios
     .get<{ cities: { Name: string }[] }>("/user/star")
     .then((res) => res.data);
@@ -123,6 +141,7 @@ function App() {
           element: <Home />,
           handle: {},
           loader: IndexLoader,
+          action: IndexAction,
         },
         {
           path: "login",
