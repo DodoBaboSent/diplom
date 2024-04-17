@@ -46,6 +46,7 @@ func main() {
 		}
 	}
 	owmApiKey = os.Getenv("OWM_API_KEY")
+	log.Println(os.Getenv("OWM_API_KEY"))
 
 	stack := logging.CreateStack(
 		logging.Logging,

@@ -157,7 +157,7 @@ export function Nav(props: NavProps) {
                 </Link>
               </li>
               <li>
-                <Link to="/search">
+                <Link to="/search" onClick={closeNav}>
                   <svg
                     width={20}
                     className={`inline-block`}

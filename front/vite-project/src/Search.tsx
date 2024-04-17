@@ -3,6 +3,9 @@ import { useActionData } from "react-router-typesafe";
 import { SearchAction } from "./App";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import Cookies from "universal-cookie";
+
+const cookies = new Cookies();
 
 type OWMRes = {
   coord: { lat: number; lon: number };
@@ -56,6 +59,8 @@ function Search() {
   const [weather, setWeather] = useState<OWMRes>();
   const [hiddenAnimation, setHiddenAnimation] = useState<boolean>(true);
   const [isError, setIsError] = useState<boolean>(false);
+
+  const token = cookies.get("token");
 
   useEffect(() => {
     if (data?.coord.lat !== 0) {
@@ -202,12 +207,16 @@ function Search() {
                 </div>
               </div>
             </div>
-            <button
-              className={`bg-sky-400 text-white text-bold`}
-              onClick={() => starCity(weather)}
-            >
-              Добавить город в избранные
-            </button>
+            {token ? (
+              <button
+                className={`bg-sky-400 text-white text-bold`}
+                onClick={() => starCity(weather)}
+              >
+                Добавить город в избранные
+              </button>
+            ) : (
+              <></>
+            )}
           </>
         ) : (
           <>
