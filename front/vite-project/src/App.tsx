@@ -80,20 +80,30 @@ export let LoginLoader = makeLoader(async function () {
 });
 
 export let PanelLoader = makeLoader(async function () {
-  const data = await axios
+  await axios
     .get("/refresh")
     .then((res) => res.data)
     .catch(() => null);
+  const data = await axios
+    .get<{ cities: { name: string }[] }>("/user/star")
+    .then((res) => res.data)
+    .catch(() => undefined);
   return data;
 });
 
 export let IndexLoader = makeLoader(async function () {
   const prefs = await axios
     .get<{ city: string }>("/user/get")
-    .then((res) => res.data);
+    .then((res) => res.data)
+    .catch((err) => {
+      console.log(err);
+    });
   const stars = await axios
-    .get<{ cities: { Name: string }[] }>("/user/star")
-    .then((res) => res.data);
+    .get<{ cities: { name: string }[] }>("/user/star")
+    .then((res) => res.data)
+    .catch((err) => {
+      console.log(err);
+    });
   return { prefs, stars };
 });
 

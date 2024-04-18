@@ -14,9 +14,9 @@ type User struct {
 }
 
 type City struct {
-	gorm.Model
-	Name   string
-	UserID uint
+	gorm.Model `json:"-"`
+	Name       string `json:"name"`
+	UserID     uint   `json:"-"`
 }
 
 var Database *gorm.DB

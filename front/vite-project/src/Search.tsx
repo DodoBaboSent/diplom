@@ -4,6 +4,7 @@ import { SearchAction } from "./App";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Cookies from "universal-cookie";
+import { formatInTimeZone } from "date-fns-tz";
 
 const cookies = new Cookies();
 
@@ -45,20 +46,27 @@ type OWMRes = {
   Unit: string;
 };
 
-async function starCity(data: OWMRes) {
-  await axios
-    .put("/user/star", {
-      name: data.name,
-    })
-    .then((res) => res.data);
-}
-
 function Search() {
   const data = useActionData<typeof SearchAction>();
 
   const [weather, setWeather] = useState<OWMRes>();
   const [hiddenAnimation, setHiddenAnimation] = useState<boolean>(true);
   const [isError, setIsError] = useState<boolean>(false);
+  const [success, setSuccess] = useState<{
+    success: boolean;
+    message?: string;
+  }>();
+
+  async function starCity(data: OWMRes) {
+    await axios
+      .put("/user/star", {
+        name: data.name,
+      })
+      .then(() => setSuccess({ success: true }))
+      .catch((err) => {
+        setSuccess({ success: false, message: err.response.data.message });
+      });
+  }
 
   const token = cookies.get("token");
 
@@ -88,6 +96,7 @@ function Search() {
             onClick={() => {
               setHiddenAnimation(false);
               setWeather(undefined);
+              setSuccess(undefined);
             }}
           >
             Search
@@ -130,8 +139,10 @@ function Search() {
                       <h2 className={`text-lg`}>
                         Время замера:
                         <br />
-                        {new Date(weather?.dt! * 1000).toLocaleTimeString(
-                          new Intl.Locale("ru"),
+                        {formatInTimeZone(
+                          (weather.dt + weather.timezone) * 1000,
+                          "+00:00",
+                          "kk:mm",
                         )}
                       </h2>
                     </div>
@@ -269,6 +280,21 @@ function Search() {
           </>
         )}
       </div>
+      {success?.success ? (
+        <div
+          className={`bg-green-400 mt-3 rounded text-white font-bold flex flex-col p-3`}
+        >
+          <h2 className={`text-xl`}>Город добавлен в избранные успешно</h2>
+        </div>
+      ) : success?.success == false ? (
+        <div
+          className={`bg-red-400 mt-3 rounded text-white font-bold flex flex-col p-3`}
+        >
+          <h2 className={`text-xl`}>Ошибка: {success?.message}</h2>
+        </div>
+      ) : (
+        <></>
+      )}
     </>
   );
 }

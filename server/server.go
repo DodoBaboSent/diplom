@@ -56,6 +56,104 @@ func main() {
 	router.HandleFunc("POST /jwt", auth.AuthJWT)
 	router.HandleFunc("GET /refresh", auth.RefreshJWT)
 	protectedRouter := http.NewServeMux()
+	protectedRouter.HandleFunc("PATCH /defaultCity", func(w http.ResponseWriter, r *http.Request) {
+		var city struct {
+			Name string `json:"city"`
+		}
+		err := json.NewDecoder(r.Body).Decode(&city)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		log.Println(city)
+		cookie, err := r.Cookie("token")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		tknStr := cookie.Value
+		claims := &auth.Claims{}
+		tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (any, error) {
+			return auth.JWTKey, nil
+		})
+		if err != nil {
+			if err == jwt.ErrSignatureInvalid {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if !tkn.Valid {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		var name string
+		claimss := tkn.Claims.(*auth.Claims)
+		name = fmt.Sprint(claimss.Username)
+		log.Println(name)
+		if database.Database.Model(&database.User{}).Where("username = ?", name).Update("CityName", city.Name).Error != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		return
+	})
+	protectedRouter.HandleFunc("DELETE /star", func(w http.ResponseWriter, r *http.Request) {
+		var city struct {
+			Name string `json:"city"`
+		}
+		err := json.NewDecoder(r.Body).Decode(&city)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		cookie, err := r.Cookie("token")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		tknStr := cookie.Value
+		claims := &auth.Claims{}
+		tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (any, error) {
+			return auth.JWTKey, nil
+		})
+		if err != nil {
+			if err == jwt.ErrSignatureInvalid {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if !tkn.Valid {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		var name string
+		claimss := tkn.Claims.(*auth.Claims)
+		name = fmt.Sprint(claimss.Username)
+		var result database.User
+		database.Database.Model(&database.User{}).Where("username = ?", name).Preload("Cities").First(&result)
+		checkRes := contains(result.Cities, city.Name)
+		if checkRes {
+
+			database.Database.Model(&database.City{}).Delete(&database.City{}, "user_id = ? AND name = ?", result.ID, city.Name)
+
+			var resp struct {
+				Status string `json:"status"`
+			}
+			resp.Status = "OK"
+			jsonResp, err := json.Marshal(resp)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(jsonResp)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	})
 	protectedRouter.HandleFunc("PUT /star", func(w http.ResponseWriter, r *http.Request) {
 		var city struct {
 			Name string `json:"name"`
@@ -99,9 +197,21 @@ func main() {
 			}
 			database.Database.Model(&database.City{}).Create(&cit)
 			return
+		} else {
+			var resp struct {
+				Message string `json:"message"`
+			}
+			resp.Message = "Уже отслеживается"
+			jsonResp, err := json.Marshal(resp)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(jsonResp)
+			return
 		}
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		w.WriteHeader(http.StatusTeapot)
 
 	})
 	protectedRouter.HandleFunc("GET /star", func(w http.ResponseWriter, r *http.Request) {
@@ -211,6 +321,7 @@ func main() {
 		} else {
 			name, present := query["city"]
 			if !present || len(name) == 0 {
+				log.Println("no city")
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}

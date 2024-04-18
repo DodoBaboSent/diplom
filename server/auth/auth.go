@@ -67,7 +67,7 @@ func RefreshTokenMiddleware(next http.Handler) http.Handler {
 		c, err := r.Cookie("token")
 		if err != nil {
 			if err == http.ErrNoCookie {
-				w.WriteHeader(http.StatusOK)
+				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
 			w.WriteHeader(http.StatusBadRequest)
