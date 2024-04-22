@@ -174,18 +174,25 @@ function Home() {
           setWeather(res.data);
         });
     }
-    if (!weather) {
-      if (!data.prefs) {
-        getWeather();
-      } else {
-        console.log("fetching from saved pref...");
-        getWeatherData(data.prefs);
-      }
-    }
 
-    if (!stars) {
-      if (data.stars !== undefined) {
-        getWeatherForStars(data.stars);
+    if (token && data != null) {
+      if (!weather) {
+        if (!data.prefs) {
+          getWeather();
+        } else {
+          console.log("fetching from saved pref...");
+          getWeatherData(data.prefs);
+        }
+      }
+
+      if (!stars) {
+        if (data.stars !== undefined) {
+          getWeatherForStars(data.stars);
+        }
+      }
+    } else {
+      if (!weather) {
+        getWeather();
       }
     }
   }, []);
@@ -835,6 +842,13 @@ function Home() {
                 );
               }
             })
+          ) : (
+            <></>
+          )}
+          {!token ? (
+            <div className={`bg-amber-200 p-3 flex flex-col my-2`}>
+              <h1 className={`font-bold`}>Войдите, чтобы отслеживать города</h1>
+            </div>
           ) : (
             <></>
           )}

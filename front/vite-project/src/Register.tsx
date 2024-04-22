@@ -1,8 +1,19 @@
 import { Form, Link } from "react-router-dom";
+import { useActionData } from "react-router-typesafe";
+import { RegisterAction } from "./App";
 
-function Login() {
+function Register() {
+  const actionData = useActionData<typeof RegisterAction>();
+
   return (
     <>
+      {actionData ? (
+        <div className={`bg-red-400 p-3 flex flex-col rounded my-2`}>
+          <h1 className={`text-white font-bold`}>{actionData}</h1>
+        </div>
+      ) : (
+        <></>
+      )}
       <Form className={`flex flex-col gap-3`} method="post">
         <div className={`flex flex-col gap-3`}>
           <label htmlFor="username_id">Username </label>
@@ -25,9 +36,9 @@ function Login() {
           Submit
         </button>
       </Form>
-      <Link to="/newUser">Register new account</Link>
+      <Link to="/newUser">Already have an account? Sign in</Link>
     </>
   );
 }
 
-export default Login;
+export default Register;

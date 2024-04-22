@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"server/logging"
 	"server/owm"
 	"strconv"
+	"time"
 
 	openweather "github.com/briandowns/openweathermap"
 	"github.com/golang-jwt/jwt/v5"
@@ -294,7 +296,59 @@ func main() {
 		w.Write(jsonResp)
 		return
 	})
+	protectedRouter.HandleFunc("GET /logout", func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{
+			Name:    "token",
+			Value:   "",
+			Path:    "/",
+			Expires: time.Now(),
+		})
+		return
+	})
 	router.Handle("/user/", http.StripPrefix("/user", auth.RefreshTokenMiddleware(protectedRouter)))
+	router.HandleFunc("POST /register", func(w http.ResponseWriter, r *http.Request) {
+		var user struct {
+			Username string `json:"username"`
+			Password string `json:"password"`
+		}
+		err := json.NewDecoder(r.Body).Decode(&user)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		var result database.User
+		if database.Database.Model(&database.User{}).First(&result, "username = ?", user.Username).Error != nil {
+			if result.Username == user.Username {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("Такой пользователь уже существует"))
+				return
+			}
+		}
+		h := sha256.New()
+		h.Write([]byte(user.Password))
+		database.Database.Create(&database.User{Password: string(h.Sum(nil)), Username: user.Username, Active: false})
+
+		expirTime := time.Now().Add(24 * 5 * time.Hour)
+		claims := &auth.Claims{
+			Username:   user.Username,
+			Activation: false,
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(expirTime),
+			},
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenString, err := token.SignedString(auth.JWTKey)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:    "token",
+			Value:   tokenString,
+			Expires: expirTime,
+		})
+		return
+	})
 	router.HandleFunc("GET /weather", func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
 		var weather *openweather.CurrentWeatherData

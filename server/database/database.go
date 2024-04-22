@@ -1,6 +1,8 @@
 package database
 
 import (
+	"crypto/sha256"
+
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -9,6 +11,7 @@ type User struct {
 	gorm.Model
 	Username string `gorm:"unique"`
 	Password string
+	Active   bool `json:"-"`
 	CityName string
 	Cities   []City
 }
@@ -29,5 +32,7 @@ func InitDB() {
 	}
 	Database.AutoMigrate(&User{})
 	Database.AutoMigrate(&City{})
-	Database.Create(&User{Username: "admin", Password: "password", CityName: "Хабаровск", Cities: []City{{Name: "Детройт"}, {Name: "Лондон"}, {Name: "Москва"}}})
+	h := sha256.New()
+	h.Write([]byte("password"))
+	Database.Create(&User{Username: "admin", Password: string(h.Sum(nil)), CityName: "Хабаровск", Cities: []City{{Name: "Детройт"}, {Name: "Лондон"}, {Name: "Москва"}}})
 }

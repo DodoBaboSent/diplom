@@ -15,6 +15,7 @@ import Login from "./Login";
 import UserPanel from "./UserPanel";
 import Cookies from "universal-cookie";
 import Search from "./Search";
+import Register from "./Register";
 
 const cookies = new Cookies();
 
@@ -79,32 +80,65 @@ export let LoginLoader = makeLoader(async function () {
   }
 });
 
-export let PanelLoader = makeLoader(async function () {
+export let RegisterAction = makeAction(async function ({
+  request,
+}: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const username = formData.get("username");
+  const password = formData.get("password");
+  let success: { success: boolean; message?: string } = { success: false };
   await axios
-    .get("/refresh")
-    .then((res) => res.data)
-    .catch(() => null);
+    .post("/register", {
+      username: username,
+      password: password,
+    })
+    .then(() => {
+      success = { success: true };
+    })
+    .catch((reason) => {
+      success = { success: false, message: reason.response.data };
+    });
+  if (success.success) {
+    return redirect("/panel");
+  } else {
+    return success.message;
+  }
+  return success.message;
+});
+
+export let PanelLoader = makeLoader(async function () {
   const data = await axios
-    .get<{ cities: { name: string }[] }>("/user/star")
-    .then((res) => res.data)
-    .catch(() => undefined);
+    .get<{ cities: { name: string }[]; warning?: string; cod?: number }>(
+      "/user/star",
+    )
+    .then((res) => {
+      return res.data;
+    })
+    .catch((reason) => console.log(reason));
+  console.log(data);
   return data;
 });
 
 export let IndexLoader = makeLoader(async function () {
-  const prefs = await axios
-    .get<{ city: string }>("/user/get")
-    .then((res) => res.data)
-    .catch((err) => {
-      console.log(err);
-    });
-  const stars = await axios
-    .get<{ cities: { name: string }[] }>("/user/star")
-    .then((res) => res.data)
-    .catch((err) => {
-      console.log(err);
-    });
-  return { prefs, stars };
+  const token = cookies.get("token");
+  if (token) {
+    const prefs = await axios
+      .get<{ city: string }>("/user/get")
+      .then((res) => res.data)
+      .catch((err) => {
+        console.log(err);
+      });
+    const stars = await axios
+      .get<{ cities: { name: string }[] }>("/user/star")
+      .then((res) => res.data)
+      .catch((err) => {
+        console.log(err);
+      });
+
+    return { prefs, stars };
+  } else {
+    return null;
+  }
 });
 
 export let LoginAction = makeAction(async function ({
@@ -132,6 +166,21 @@ export let LoginAction = makeAction(async function ({
   } else {
     return null;
   }
+});
+export let LogoutLoader = makeLoader(async function () {
+  let success = false;
+  await axios
+    .get("/user/logout")
+    .then((res) => {
+      if (res.status == 200) {
+        success = true;
+      }
+    })
+    .catch(() => null);
+  if (success) {
+    return redirect("/");
+  }
+  return redirect("/");
 });
 
 function App() {
@@ -171,6 +220,17 @@ function App() {
           element: <Search />,
           handle: { crumb: () => <Link to="/search">Search</Link> },
           action: SearchAction,
+        },
+        {
+          path: "logout",
+          loader: LogoutLoader,
+          handle: {},
+        },
+        {
+          path: "newUser",
+          element: <Register />,
+          action: RegisterAction,
+          handle: { crumb: () => <Link to="/newUser">Register</Link> },
         },
       ],
     },

@@ -27,45 +27,53 @@ function UserPanel() {
   return (
     <>
       <div className={`gap-3 flex flex-col p-3 w-[100%]`}>
-        <h1 className={`text-2xl lg:text-3xl font-bold`}>
-          Ваши отслеживаемые города
-        </h1>
-        {data !== undefined ? (
+        {data != undefined && data.cod == undefined ? (
           <>
-            <div className={`flex flex-col w-[100%] p-3 border`}>
-              <table className={`table-auto w-[100%] mb-2 border-collapse`}>
-                <thead>
-                  <tr>
-                    <th className={`border p-2`}>Название</th>
-                    <th className={`border p-2`}></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.cities.map((element) => {
-                    return (
-                      <>
-                        <tr>
-                          <td className={`border p-2`}>{element.name}</td>
-                          <td className={`border p-2`}>
-                            <button
-                              className={`bg-red-600 text-white font-bold p-2 rounded`}
-                              onClick={() => {
-                                unstar(element.name);
-                              }}
-                            >
-                              Удалить
-                            </button>
-                          </td>
-                        </tr>
-                      </>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <h1 className={`text-2xl lg:text-3xl font-bold`}>
+              Ваши отслеживаемые города
+            </h1>
+            {data !== undefined ? (
+              <>
+                <div className={`flex flex-col w-[100%] p-3 border`}>
+                  <table className={`table-auto w-[100%] mb-2 border-collapse`}>
+                    <thead>
+                      <tr>
+                        <th className={`border p-2`}>Название</th>
+                        <th className={`border p-2`}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.cities.map((element) => {
+                        return (
+                          <>
+                            <tr>
+                              <td className={`border p-2`}>{element.name}</td>
+                              <td className={`border p-2`}>
+                                <button
+                                  className={`bg-red-600 text-white font-bold p-2 rounded`}
+                                  onClick={() => {
+                                    unstar(element.name);
+                                  }}
+                                >
+                                  Удалить
+                                </button>
+                              </td>
+                            </tr>
+                          </>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : (
+              <></>
+            )}
           </>
         ) : (
-          <></>
+          <div className={`bg-amber-200 p-3 my-2 rounded flex flex-col`}>
+            <h1 className={`font-bold`}>{data!.warning!}</h1>
+          </div>
         )}
       </div>
     </>

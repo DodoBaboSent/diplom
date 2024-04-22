@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -18,7 +19,8 @@ type Credentials struct {
 }
 
 type Claims struct {
-	Username string `json:"username"`
+	Username   string `json:"username"`
+	Activation bool   `json:"active"`
 	jwt.RegisteredClaims
 }
 
@@ -37,14 +39,17 @@ func AuthJWT(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	expectedPass := result.Password
-	if expectedPass != creds.Password {
+	credsHash := sha256.New()
+	credsHash.Write([]byte(creds.Password))
+	if expectedPass != string(credsHash.Sum(nil)) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	expirTime := time.Now().Add(24 * 5 * time.Hour)
 	claims := &Claims{
-		Username: creds.Username,
+		Username:   creds.Username,
+		Activation: result.Active,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirTime),
 		},
@@ -80,17 +85,52 @@ func RefreshTokenMiddleware(next http.Handler) http.Handler {
 		})
 		if err != nil {
 			if err == jwt.ErrSignatureInvalid {
+				http.SetCookie(w, &http.Cookie{
+					Name:    "token",
+					Value:   "",
+					Path:    "/",
+					Expires: time.Now(),
+				})
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
+			http.SetCookie(w, &http.Cookie{
+				Name:    "token",
+				Value:   "",
+				Path:    "/",
+				Expires: time.Now(),
+			})
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		if !tkn.Valid {
+			http.SetCookie(w, &http.Cookie{
+				Name:    "token",
+				Value:   "",
+				Path:    "/",
+				Expires: time.Now(),
+			})
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
+		claimsDec := tkn.Claims.(*Claims)
+		if claimsDec.Activation != true {
+			var warning struct {
+				Message string `json:"warning"`
+				Cod     int    `json:"cod"`
+			}
+			warning.Message = "Активируйте свой аккаунт"
+			warning.Cod = 10
+			jsonResp, err := json.Marshal(warning)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(jsonResp)
+			return
+		}
 		expirTime := time.Now().Add(24 * 5 * time.Hour)
 		claims.ExpiresAt = jwt.NewNumericDate(expirTime)
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -137,6 +177,22 @@ func RefreshJWT(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	claimsDec := tkn.Claims.(*Claims)
+	if claimsDec.Activation != true {
+		var warning struct {
+			Message string `json:"warning"`
+			Cod     int    `json:"cod"`
+		}
+		warning.Message = "Активируйте свой аккаунт"
+		warning.Cod = 10
+		jsonResp, err := json.Marshal(warning)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonResp)
+	}
 	expirTime := time.Now().Add(24 * 5 * time.Hour)
 	claims.ExpiresAt = jwt.NewNumericDate(expirTime)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -150,4 +206,5 @@ func RefreshJWT(w http.ResponseWriter, r *http.Request) {
 		Value:   tokenString,
 		Expires: expirTime,
 	})
+	return
 }
