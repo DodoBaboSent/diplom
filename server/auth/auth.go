@@ -2,8 +2,10 @@ package auth
 
 import (
 	"crypto/sha256"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"server/database"
 	"time"
@@ -34,7 +36,8 @@ func AuthJWT(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var result database.User
-	if err := database.Database.Model(database.User{Username: creds.Username}).First(&result).Error; err != nil {
+	if err := database.Database.Model(&database.User{}).Where("username = @name OR email = @name", sql.Named("name", creds.Username)).First(&result).Error; err != nil {
+		log.Println("doesnt exist")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -42,13 +45,17 @@ func AuthJWT(w http.ResponseWriter, r *http.Request) {
 	credsHash := sha256.New()
 	credsHash.Write([]byte(creds.Password))
 	if expectedPass != string(credsHash.Sum(nil)) {
+		log.Println(expectedPass)
+		log.Println(credsHash.Sum(nil))
+		log.Println(string(credsHash.Sum(nil)))
+		log.Println("wrong pass")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	expirTime := time.Now().Add(24 * 5 * time.Hour)
 	claims := &Claims{
-		Username:   creds.Username,
+		Username:   result.Username,
 		Activation: result.Active,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirTime),
@@ -115,7 +122,9 @@ func RefreshTokenMiddleware(next http.Handler) http.Handler {
 		}
 
 		claimsDec := tkn.Claims.(*Claims)
-		if claimsDec.Activation != true {
+		var result database.User
+		database.Database.Model(&database.User{}).Where("username = ?", claimsDec.Username).First(&result)
+		if result.Active != true {
 			var warning struct {
 				Message string `json:"warning"`
 				Cod     int    `json:"cod"`
@@ -132,8 +141,9 @@ func RefreshTokenMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		expirTime := time.Now().Add(24 * 5 * time.Hour)
-		claims.ExpiresAt = jwt.NewNumericDate(expirTime)
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		claimsDec.ExpiresAt = jwt.NewNumericDate(expirTime)
+		claimsDec.Activation = true
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claimsDec)
 		tokenString, err := token.SignedString(JWTKey)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

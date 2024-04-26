@@ -86,11 +86,13 @@ export let RegisterAction = makeAction(async function ({
   const formData = await request.formData();
   const username = formData.get("username");
   const password = formData.get("password");
+  const mail = formData.get("mail");
   let success: { success: boolean; message?: string } = { success: false };
   await axios
     .post("/register", {
       username: username,
       password: password,
+      mail: mail,
     })
     .then(() => {
       success = { success: true };
@@ -122,18 +124,21 @@ export let PanelLoader = makeLoader(async function () {
 export let IndexLoader = makeLoader(async function () {
   const token = cookies.get("token");
   if (token) {
-    const prefs = await axios
+    let prefs = await axios
       .get<{ city: string }>("/user/get")
       .then((res) => res.data)
-      .catch((err) => {
-        console.log(err);
-      });
-    const stars = await axios
+      .catch(() => null);
+    let stars = await axios
       .get<{ cities: { name: string }[] }>("/user/star")
       .then((res) => res.data)
-      .catch((err) => {
-        console.log(err);
-      });
+      .catch(() => null);
+
+    if ((prefs as any).cod != undefined) {
+      prefs = null;
+    }
+    if ((stars as any).cod != undefined) {
+      stars = null;
+    }
 
     return { prefs, stars };
   } else {
@@ -170,7 +175,7 @@ export let LoginAction = makeAction(async function ({
 export let LogoutLoader = makeLoader(async function () {
   let success = false;
   await axios
-    .get("/user/logout")
+    .get("/token/logout")
     .then((res) => {
       if (res.status == 200) {
         success = true;
@@ -178,7 +183,7 @@ export let LogoutLoader = makeLoader(async function () {
     })
     .catch(() => null);
   if (success) {
-    return redirect("/");
+    return redirect("/login");
   }
   return redirect("/");
 });

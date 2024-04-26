@@ -11,7 +11,8 @@ type User struct {
 	gorm.Model
 	Username string `gorm:"unique"`
 	Password string
-	Active   bool `json:"-"`
+	Email    string `gorm:"unique"`
+	Active   bool   `json:"-"`
 	CityName string
 	Cities   []City
 }
@@ -34,5 +35,5 @@ func InitDB() {
 	Database.AutoMigrate(&City{})
 	h := sha256.New()
 	h.Write([]byte("password"))
-	Database.Create(&User{Username: "admin", Password: string(h.Sum(nil)), CityName: "Хабаровск", Cities: []City{{Name: "Детройт"}, {Name: "Лондон"}, {Name: "Москва"}}})
+	Database.Create(&User{Username: "admin", Password: string(h.Sum(nil)), Email: "example@example.com", Active: true, CityName: "Хабаровск", Cities: []City{{Name: "Детройт"}, {Name: "Лондон"}, {Name: "Москва"}}})
 }

@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"io/fs"
 	"log"
@@ -20,9 +22,14 @@ import (
 	openweather "github.com/briandowns/openweathermap"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
+	gomail "gopkg.in/gomail.v2"
 )
 
 var owmApiKey string
+
+type TmplData struct {
+	URL string
+}
 
 func contains(s []database.City, e string) bool {
 	for _, a := range s {
@@ -37,6 +44,7 @@ func main() {
 	router := http.NewServeMux()
 
 	dist, _ := fs.Sub(TemplFS.TemplFS, "dist")
+	tmpls, _ := fs.Sub(TemplFS.TemplFS, "mail")
 
 	database.InitDB()
 
@@ -97,7 +105,16 @@ func main() {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		w.WriteHeader(http.StatusOK)
+		weather := owm.GetWeatherName(city.Name)
+
+		weather.Key = "redacted"
+		w.Header().Set("Content-Type", "application/json")
+		jsonResp, err := json.Marshal(weather)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Write(jsonResp)
 		return
 	})
 	protectedRouter.HandleFunc("DELETE /star", func(w http.ResponseWriter, r *http.Request) {
@@ -257,6 +274,14 @@ func main() {
 		return
 
 	})
+	router.HandleFunc("GET /token/activate/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		database.Database.Model(&database.User{}).Where("id = ?", id).Update("active", true)
+		http.Redirect(w, r, "/", http.StatusFound)
+
+		return
+
+	})
 	protectedRouter.HandleFunc("GET /get", func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("token")
 		if err != nil {
@@ -283,7 +308,7 @@ func main() {
 		claimss := tkn.Claims.(*auth.Claims)
 		name = fmt.Sprint(claimss.Username)
 		var result database.User
-		database.Database.Model(database.User{Username: name}).First(&result)
+		database.Database.Model(&database.User{}).Where("username = ?", name).First(&result)
 		var resp struct {
 			Name string `json:"city"`
 		}
@@ -296,7 +321,7 @@ func main() {
 		w.Write(jsonResp)
 		return
 	})
-	protectedRouter.HandleFunc("GET /logout", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("GET /token/logout", func(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, &http.Cookie{
 			Name:    "token",
 			Value:   "",
@@ -309,6 +334,7 @@ func main() {
 	router.HandleFunc("POST /register", func(w http.ResponseWriter, r *http.Request) {
 		var user struct {
 			Username string `json:"username"`
+			Mail     string `json:"mail"`
 			Password string `json:"password"`
 		}
 		err := json.NewDecoder(r.Body).Decode(&user)
@@ -326,7 +352,8 @@ func main() {
 		}
 		h := sha256.New()
 		h.Write([]byte(user.Password))
-		database.Database.Create(&database.User{Password: string(h.Sum(nil)), Username: user.Username, Active: false})
+		newUser := database.User{Password: string(h.Sum(nil)), Username: user.Username, Active: false, Email: user.Mail}
+		database.Database.Create(&newUser)
 
 		expirTime := time.Now().Add(24 * 5 * time.Hour)
 		claims := &auth.Claims{
@@ -342,11 +369,34 @@ func main() {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		hostname := os.Getenv("HOST")
+		tmplData := TmplData{
+			URL: fmt.Sprintf(`%s/token/activate/%s`, hostname, strconv.FormatUint(uint64(newUser.ID), 10)),
+		}
+		tmpl, err := template.ParseFS(tmpls, "mail.tmpl")
+		if err != nil {
+			log.Println(err)
+		}
+
 		http.SetCookie(w, &http.Cookie{
 			Name:    "token",
 			Value:   tokenString,
 			Expires: expirTime,
 		})
+		var tpl bytes.Buffer
+		if err := tmpl.Execute(&tpl, tmplData); err != nil {
+			log.Println(err)
+		}
+		m := gomail.NewMessage()
+		m.SetHeader("From", os.Getenv("EMAIL_USER"))
+		m.SetHeader("To", user.Mail)
+		m.SetHeader("Subject", "Активация аккаунта")
+		m.SetBody("text/html", tpl.String())
+		port, _ := strconv.Atoi(os.Getenv("EMAIL_PORT"))
+		d := gomail.NewDialer(os.Getenv("EMAIL_HOST"), port, os.Getenv("EMAIL_USER"), os.Getenv("EMAIL_PASSWORD"))
+		if err := d.DialAndSend(m); err != nil {
+			log.Println(err)
+		}
 		return
 	})
 	router.HandleFunc("GET /weather", func(w http.ResponseWriter, r *http.Request) {

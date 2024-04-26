@@ -23,6 +23,13 @@ function Register() {
             id="username_id"
             className={`border p-2`}
           />
+          <label htmlFor="mail_id">Email </label>
+          <input
+            name="mail"
+            type="text"
+            id="mail_id"
+            className={`border p-2`}
+          />
 
           <label htmlFor="password_id">Password </label>
           <input

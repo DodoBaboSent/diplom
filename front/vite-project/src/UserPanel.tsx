@@ -1,7 +1,7 @@
 import { useLoaderData } from "react-router-typesafe";
 import { PanelLoader } from "./App";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function UserPanel() {
   const data = useLoaderData<typeof PanelLoader>();
@@ -75,6 +75,11 @@ function UserPanel() {
             <h1 className={`font-bold`}>{data!.warning!}</h1>
           </div>
         )}
+        <div className={`bg-red-400 w-[100%] p-2 rounded`}>
+          <Link to="/logout" className={`text-white font-bold`}>
+            Выйти из аккаунта
+          </Link>
+        </div>
       </div>
     </>
   );

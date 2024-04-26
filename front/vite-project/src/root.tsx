@@ -5,6 +5,7 @@ import { Link, Outlet } from "react-router-dom";
 
 export function Root() {
   const [navClosed, setNavClosed] = useState(false);
+
   return (
     <>
       <Nav isClosed={navClosed} onClick={setNavClosed} />
@@ -53,9 +54,6 @@ export function Root() {
             </li>
             <li>
               <Link to="/search">Search</Link>
-            </li>
-            <li>
-              <Link to="/logout">Logout</Link>
             </li>
           </ol>
         </div>
