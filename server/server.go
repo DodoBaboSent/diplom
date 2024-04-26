@@ -350,6 +350,11 @@ func main() {
 				return
 			}
 		}
+		if result.Username == user.Username {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("Такой пользователь уже существует"))
+			return
+		}
 		h := sha256.New()
 		h.Write([]byte(user.Password))
 		newUser := database.User{Password: string(h.Sum(nil)), Username: user.Username, Active: false, Email: user.Mail}
