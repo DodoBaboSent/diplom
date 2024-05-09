@@ -62,6 +62,7 @@ func main() {
 		logging.Logging,
 	)
 
+	adminRouter := http.NewServeMux()
 	router.Handle("/", logging.WrapHandler(http.FileServer(http.FS(dist))))
 	router.HandleFunc("POST /jwt", auth.AuthJWT)
 	router.HandleFunc("GET /refresh", auth.RefreshJWT)
@@ -330,7 +331,161 @@ func main() {
 		})
 		return
 	})
+	router.HandleFunc("GET /user/checkAdmin", func(w http.ResponseWriter, r *http.Request) {
+		c, err := r.Cookie("token")
+		if err != nil {
+			if err == http.ErrNoCookie {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		tknStr := c.Value
+		claims := &auth.Claims{}
+		tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (any, error) {
+			return auth.JWTKey, nil
+		})
+		if err != nil {
+			if err == jwt.ErrSignatureInvalid {
+				http.SetCookie(w, &http.Cookie{
+					Name:    "token",
+					Value:   "",
+					Path:    "/",
+					Expires: time.Now(),
+				})
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			http.SetCookie(w, &http.Cookie{
+				Name:    "token",
+				Value:   "",
+				Path:    "/",
+				Expires: time.Now(),
+			})
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if !tkn.Valid {
+			http.SetCookie(w, &http.Cookie{
+				Name:    "token",
+				Value:   "",
+				Path:    "/",
+				Expires: time.Now(),
+			})
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		claimsDec := tkn.Claims.(*auth.Claims)
+		var result database.User
+		database.Database.Model(&database.User{}).Where("username = ?", claimsDec.Username).First(&result)
+		if result.Active != true {
+			var warning struct {
+				Message string `json:"warning"`
+				Cod     int    `json:"cod"`
+			}
+			warning.Message = "Активируйте свой аккаунт"
+			warning.Cod = 10
+			jsonResp, err := json.Marshal(warning)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(jsonResp)
+			return
+		}
+		if claimsDec.Admin != true {
+			var resp struct {
+				Admin bool `json:"admin"`
+			}
+			resp.Admin = false
+			jsonResp, err := json.Marshal(resp)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(jsonResp)
+			return
+		}
+		expirTime := time.Now().Add(24 * 5 * time.Hour)
+		claimsDec.ExpiresAt = jwt.NewNumericDate(expirTime)
+		claimsDec.Activation = true
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claimsDec)
+		tokenString, err := token.SignedString(auth.JWTKey)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:    "token",
+			Value:   tokenString,
+			Path:    "/",
+			Expires: expirTime,
+		})
+		var resp struct {
+			Admin bool `json:"admin"`
+		}
+		resp.Admin = claimsDec.Admin
+		jsonResp, err := json.Marshal(resp)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonResp)
+		return
+	})
 	router.Handle("/user/", http.StripPrefix("/user", auth.RefreshTokenMiddleware(protectedRouter)))
+	adminRouter.HandleFunc("GET /users", func(w http.ResponseWriter, r *http.Request) {
+		var users []database.User
+		database.Database.Find(&users)
+		jsonResp, err := json.Marshal(users)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonResp)
+		return
+	})
+	adminRouter.HandleFunc("/userdel/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id, err := strconv.Atoi(r.PathValue("id"))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		database.Database.Model(&database.User{}).Delete(&database.User{}, "id = ?", id)
+		w.WriteHeader(http.StatusOK)
+		return
+	})
+	adminRouter.HandleFunc("POST /new_article", func(w http.ResponseWriter, r *http.Request) {
+		var article struct {
+			Name string `json:"name"`
+			Body string `json:"body"`
+		}
+		err := json.NewDecoder(r.Body).Decode(&article)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		result := database.Database.Model(&database.News{}).Create(&database.News{Name: article.Name, Body: article.Body})
+		if result.Error != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		w.WriteHeader(http.StatusOK)
+		return
+	})
+	adminRouter.HandleFunc("GET /news", func(w http.ResponseWriter, r *http.Request) {
+		var news []database.News
+		database.Database.Find(&news)
+		jsonResp, err := json.Marshal(news)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonResp)
+		return
+	})
+	router.Handle("/admin/", http.StripPrefix("/admin", auth.AdminMiddleware(adminRouter)))
 	router.HandleFunc("POST /register", func(w http.ResponseWriter, r *http.Request) {
 		var user struct {
 			Username string `json:"username"`

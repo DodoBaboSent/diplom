@@ -16,8 +16,75 @@ import UserPanel from "./UserPanel";
 import Cookies from "universal-cookie";
 import Search from "./Search";
 import Register from "./Register";
+import AdminPanel from "./AdminPanel";
 
 const cookies = new Cookies();
+
+export let AdminAction = makeAction(async function ({
+  request,
+}: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const name = formData.get("name");
+  const body = formData.get("body");
+  if (
+    typeof name != "string" ||
+    name == "" ||
+    typeof body != "string" ||
+    body == ""
+  ) {
+    const err: { warning: string } = { warning: "Поля заполнены неправильно" };
+    return err;
+  }
+  const success = await axios
+    .post("/admin/new_article", {
+      name: name,
+      body: body,
+    })
+    .then(() => true)
+    .catch(() => false);
+  if (success == true) {
+    const err = null;
+    return err;
+  } else {
+    const err: { warning: string } = { warning: "Не удалось создать новость" };
+    return err;
+  }
+});
+
+export let AdminLoader = makeLoader(async function () {
+  const data = await axios
+    .get<{ admin: boolean }>("/user/checkAdmin")
+    .then((res) => res.data)
+    .catch(() => {
+      return { admin: false };
+    });
+
+  if (data) {
+    if (data.admin == false || data.admin == undefined || data.admin == null) {
+      return redirect("/login");
+    } else {
+      const users = await axios
+        .get<
+          {
+            ID: number;
+            CreatedAt?: string;
+            UpdatedAt?: string;
+            DeletedAt?: string;
+            Username: string;
+            Email: string;
+          }[]
+        >("/admin/users")
+        .then((res) => res.data)
+        .catch(() => undefined);
+      const news = await axios
+        .get<{ id: string; name: string; body: string }[]>("/admin/news")
+        .then((res) => res.data)
+        .catch(() => undefined);
+      return { data, users, news };
+    }
+  }
+  return redirect("/login");
+});
 
 export let IndexAction = makeAction(async function ({
   request,
@@ -117,8 +184,13 @@ export let PanelLoader = makeLoader(async function () {
       return res.data;
     })
     .catch((reason) => console.log(reason));
-  console.log(data);
-  return data;
+  const admin = await axios
+    .get<{ admin: boolean }>("/user/checkAdmin")
+    .then((res) => res.data)
+    .catch(() => {
+      return { admin: false };
+    });
+  return { data, admin };
 });
 
 export let IndexLoader = makeLoader(async function () {
@@ -236,6 +308,13 @@ function App() {
           element: <Register />,
           action: RegisterAction,
           handle: { crumb: () => <Link to="/newUser">Register</Link> },
+        },
+        {
+          path: "admin_panel",
+          element: <AdminPanel />,
+          handle: { crumb: () => <Link to="/admin_panel">Admin</Link> },
+          loader: AdminLoader,
+          action: AdminAction,
         },
       ],
     },

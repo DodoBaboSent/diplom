@@ -23,6 +23,7 @@ type Credentials struct {
 type Claims struct {
 	Username   string `json:"username"`
 	Activation bool   `json:"active"`
+	Admin      bool   `json:"adm"`
 	jwt.RegisteredClaims
 }
 
@@ -57,6 +58,7 @@ func AuthJWT(w http.ResponseWriter, r *http.Request) {
 	claims := &Claims{
 		Username:   result.Username,
 		Activation: result.Active,
+		Admin:      result.Admin,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirTime),
 		},
@@ -138,6 +140,94 @@ func RefreshTokenMiddleware(next http.Handler) http.Handler {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(jsonResp)
+			return
+		}
+		expirTime := time.Now().Add(24 * 5 * time.Hour)
+		claimsDec.ExpiresAt = jwt.NewNumericDate(expirTime)
+		claimsDec.Activation = true
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claimsDec)
+		tokenString, err := token.SignedString(JWTKey)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:    "token",
+			Value:   tokenString,
+			Path:    "/",
+			Expires: expirTime,
+		})
+		next.ServeHTTP(w, r)
+	})
+}
+func AdminMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, err := r.Cookie("token")
+		if err != nil {
+			if err == http.ErrNoCookie {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		tknStr := c.Value
+		claims := &Claims{}
+		tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (any, error) {
+			return JWTKey, nil
+		})
+		if err != nil {
+			if err == jwt.ErrSignatureInvalid {
+				http.SetCookie(w, &http.Cookie{
+					Name:    "token",
+					Value:   "",
+					Path:    "/",
+					Expires: time.Now(),
+				})
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			http.SetCookie(w, &http.Cookie{
+				Name:    "token",
+				Value:   "",
+				Path:    "/",
+				Expires: time.Now(),
+			})
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if !tkn.Valid {
+			http.SetCookie(w, &http.Cookie{
+				Name:    "token",
+				Value:   "",
+				Path:    "/",
+				Expires: time.Now(),
+			})
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		claimsDec := tkn.Claims.(*Claims)
+		var result database.User
+		database.Database.Model(&database.User{}).Where("username = ?", claimsDec.Username).First(&result)
+		if result.Active != true {
+			var warning struct {
+				Message string `json:"warning"`
+				Cod     int    `json:"cod"`
+			}
+			warning.Message = "Активируйте свой аккаунт"
+			warning.Cod = 10
+			jsonResp, err := json.Marshal(warning)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(jsonResp)
+			return
+		}
+		if claimsDec.Admin != true {
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		expirTime := time.Now().Add(24 * 5 * time.Hour)

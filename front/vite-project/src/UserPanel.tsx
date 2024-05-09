@@ -4,7 +4,7 @@ import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 
 function UserPanel() {
-  const data = useLoaderData<typeof PanelLoader>();
+  const { data, admin } = useLoaderData<typeof PanelLoader>();
 
   const navigate = useNavigate();
 
@@ -80,6 +80,15 @@ function UserPanel() {
             Выйти из аккаунта
           </Link>
         </div>
+        {admin.admin == true ? (
+          <div className={`bg-red-400 w-[100%] p-2 rounded`}>
+            <Link to="/admin_panel" className={`text-white font-bold`}>
+              Перейти в панель администратора
+            </Link>
+          </div>
+        ) : (
+          <></>
+        )}
       </div>
     </>
   );
