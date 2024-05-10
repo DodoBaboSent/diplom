@@ -39,6 +39,7 @@ type Reply struct {
 	CreatedAt time.Time      `json:"created"`
 	UpdatedAt time.Time      `json:"updated"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	Text      string         `json:"text"`
 	User      User           `json:"user"`
 	UserID    int
 	NewsID    int

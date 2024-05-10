@@ -55,6 +55,9 @@ export function Root() {
             <li>
               <Link to="/search">Search</Link>
             </li>
+            <li>
+              <Link to="/articles">News</Link>
+            </li>
           </ol>
         </div>
         <div className="bg-amber-500 col-start-1 col-end-3"></div>

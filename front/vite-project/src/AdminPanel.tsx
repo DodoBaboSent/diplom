@@ -14,9 +14,9 @@ function AdminPanel() {
       <table className={`border-collapse border w-[65%]`}>
         <thead>
           <tr>
-            <th className={`border`}>Username</th>
-            <th className={`border`}>Email</th>
-            <th className={`border`}>Actions</th>
+            <th className={`border p-2`}>Username</th>
+            <th className={`border p-2`}>Email</th>
+            <th className={`border p-2`}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -25,9 +25,9 @@ function AdminPanel() {
               return (
                 <>
                   <tr>
-                    <td className={`border`}>{el.Username}</td>
-                    <td className={`border`}>{el.Email}</td>
-                    <td className={`border`}>
+                    <td className={`border p-2`}>{el.Username}</td>
+                    <td className={`border p-2`}>{el.Email}</td>
+                    <td className={`border p-2`}>
                       <a
                         href={`/admin/userdel/${el.ID}`}
                         className={`bg-red-500 p-1 m-1 text-white font-bold`}
@@ -48,9 +48,9 @@ function AdminPanel() {
       <table className={`border-collapse border w-[65%]`}>
         <thead>
           <tr>
-            <th className={`border`}>Название</th>
-            <th className={`border`}>Тело</th>
-            <th className={`border`}>Actions</th>
+            <th className={`border p-2`}>Название</th>
+            <th className={`border p-2`}>Тело</th>
+            <th className={`border p-2`}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -59,15 +59,15 @@ function AdminPanel() {
               return (
                 <>
                   <tr>
-                    <td className={`border`}>{el.name}</td>
-                    <td className={`border`}>
+                    <td className={`border p-2`}>{el.name}</td>
+                    <td className={`border p-2`}>
                       {el.body.length > 25
                         ? `${el.body.slice(0, 25)}...`
                         : el.body}
                     </td>
-                    <td className={`border`}>
+                    <td className={`border p-2`}>
                       <a
-                        href={`/admin/userdel/${el.id}`}
+                        href={`/admin/articledel/${el.id}`}
                         className={`bg-red-500 p-1 m-1 text-white font-bold`}
                       >
                         Удалить

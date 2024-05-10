@@ -454,7 +454,16 @@ func main() {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 		database.Database.Model(&database.User{}).Delete(&database.User{}, "id = ?", id)
-		w.WriteHeader(http.StatusOK)
+		http.Redirect(w, r, "/admin_panel", 302)
+		return
+	})
+	adminRouter.HandleFunc("/articledel/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id, err := strconv.Atoi(r.PathValue("id"))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		database.Database.Model(&database.News{}).Delete(&database.News{}, "id = ?", id)
+		http.Redirect(w, r, "/admin_panel", 302)
 		return
 	})
 	adminRouter.HandleFunc("POST /new_article", func(w http.ResponseWriter, r *http.Request) {
@@ -474,7 +483,7 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		return
 	})
-	adminRouter.HandleFunc("GET /news", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("GET /news", func(w http.ResponseWriter, r *http.Request) {
 		var news []database.News
 		database.Database.Find(&news)
 		jsonResp, err := json.Marshal(news)
@@ -484,6 +493,24 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(jsonResp)
 		return
+	})
+	router.HandleFunc("GET /getart/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id, err := strconv.Atoi(r.PathValue("id"))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		var article database.News
+		database.Database.Model(&database.News{}).First(&article, "id = ?", id)
+		jsonResp, err := json.Marshal(article)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonResp)
+		return
+
 	})
 	router.Handle("/admin/", http.StripPrefix("/admin", auth.AdminMiddleware(adminRouter)))
 	router.HandleFunc("POST /register", func(w http.ResponseWriter, r *http.Request) {
@@ -498,17 +525,29 @@ func main() {
 			return
 		}
 		var result database.User
-		if database.Database.Model(&database.User{}).First(&result, "username = ?", user.Username).Error != nil {
+		if database.Database.Unscoped().Model(&database.User{}).First(&result, "username = ?", user.Username).Error != nil {
 			if result.Username == user.Username {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("Такой пользователь уже существует"))
-				return
+				log.Println(result.DeletedAt.Time.IsZero())
+				if result.DeletedAt.Time.IsZero() {
+					w.WriteHeader(http.StatusBadRequest)
+					w.Write([]byte("Такой пользователь уже существует"))
+					return
+				} else {
+					database.Database.Unscoped().Model(&database.User{}).Delete(&database.User{}, "id = ?", result.ID)
+				}
 			}
 		}
 		if result.Username == user.Username {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("Такой пользователь уже существует"))
-			return
+			if result.Username == user.Username {
+				log.Println(result.DeletedAt.Time.IsZero())
+				if result.DeletedAt.Time.IsZero() {
+					w.WriteHeader(http.StatusBadRequest)
+					w.Write([]byte("Такой пользователь уже существует"))
+					return
+				} else {
+					database.Database.Unscoped().Model(&database.User{}).Delete(&database.User{}, "id = ?", result.ID)
+				}
+			}
 		}
 		h := sha256.New()
 		h.Write([]byte(user.Password))

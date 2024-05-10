@@ -6,6 +6,7 @@ import Home, { OWMRes } from "./Home";
 import {
   ActionFunctionArgs,
   Link,
+  LoaderFunctionArgs,
   RouterProvider,
   createBrowserRouter,
   redirect,
@@ -17,6 +18,8 @@ import Cookies from "universal-cookie";
 import Search from "./Search";
 import Register from "./Register";
 import AdminPanel from "./AdminPanel";
+import Articles from "./Articles";
+import Article from "./Article";
 
 const cookies = new Cookies();
 
@@ -43,8 +46,7 @@ export let AdminAction = makeAction(async function ({
     .then(() => true)
     .catch(() => false);
   if (success == true) {
-    const err = null;
-    return err;
+    return redirect("/admin_panel");
   } else {
     const err: { warning: string } = { warning: "Не удалось создать новость" };
     return err;
@@ -77,7 +79,7 @@ export let AdminLoader = makeLoader(async function () {
         .then((res) => res.data)
         .catch(() => undefined);
       const news = await axios
-        .get<{ id: string; name: string; body: string }[]>("/admin/news")
+        .get<{ id: string; name: string; body: string }[]>("/news")
         .then((res) => res.data)
         .catch(() => undefined);
       return { data, users, news };
@@ -147,6 +149,14 @@ export let LoginLoader = makeLoader(async function () {
   }
 });
 
+export let ArticlesLoader = makeLoader(async function () {
+  const articles = await axios
+    .get<{ id: string; name: string; body: string }[]>("/news")
+    .then((res) => res.data)
+    .catch(() => null);
+  return articles;
+});
+
 export let RegisterAction = makeAction(async function ({
   request,
 }: ActionFunctionArgs) {
@@ -173,6 +183,22 @@ export let RegisterAction = makeAction(async function ({
     return success.message;
   }
   return success.message;
+});
+
+export let ArticleLoader = makeLoader(async function ({
+  params,
+}: LoaderFunctionArgs) {
+  const id = params.articleId;
+  const article = await axios
+    .get<{
+      id: number;
+      name: string;
+      body: string;
+      rep: { id: number; text: string; UserID: number }[];
+    }>(`/getart/${id}`)
+    .then((res) => res.data)
+    .catch(() => null);
+  return article;
 });
 
 export let PanelLoader = makeLoader(async function () {
@@ -315,6 +341,18 @@ function App() {
           handle: { crumb: () => <Link to="/admin_panel">Admin</Link> },
           loader: AdminLoader,
           action: AdminAction,
+        },
+        {
+          path: "articles",
+          handle: { crumb: () => <Link to="/articles">News</Link> },
+          element: <Articles />,
+          loader: ArticlesLoader,
+        },
+        {
+          path: "/article/:articleId",
+          element: <Article />,
+          handle: { crumb: () => <p>Article</p> },
+          loader: ArticleLoader,
         },
       ],
     },
