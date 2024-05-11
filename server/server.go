@@ -443,9 +443,50 @@ func main() {
 		jsonResp, err := json.Marshal(users)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(jsonResp)
+		return
+	})
+	adminRouter.HandleFunc("/activate/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id, err := strconv.Atoi(r.PathValue("id"))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		database.Database.Model(&database.User{}).Where("id = ?", id).Update("active", true)
+		http.Redirect(w, r, "/admin_panel", 302)
+		return
+	})
+	adminRouter.HandleFunc("/deactivate/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id, err := strconv.Atoi(r.PathValue("id"))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		database.Database.Model(&database.User{}).Where("id = ?", id).Update("active", false)
+		http.Redirect(w, r, "/admin_panel", 302)
+		return
+	})
+	adminRouter.HandleFunc("/makeadm/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id, err := strconv.Atoi(r.PathValue("id"))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		database.Database.Model(&database.User{}).Where("id = ?", id).Update("admin", true)
+		http.Redirect(w, r, "/admin_panel", 302)
+		return
+	})
+	adminRouter.HandleFunc("/remadm/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id, err := strconv.Atoi(r.PathValue("id"))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		database.Database.Model(&database.User{}).Where("id = ?", id).Update("admin", false)
+		http.Redirect(w, r, "/admin_panel", 302)
 		return
 	})
 	adminRouter.HandleFunc("/userdel/{id}", func(w http.ResponseWriter, r *http.Request) {
@@ -485,13 +526,90 @@ func main() {
 	})
 	router.HandleFunc("GET /news", func(w http.ResponseWriter, r *http.Request) {
 		var news []database.News
-		database.Database.Find(&news)
+		database.Database.Preload("Replies").Find(&news)
 		jsonResp, err := json.Marshal(news)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(jsonResp)
+		return
+	})
+	router.HandleFunc("POST /newcomment", func(w http.ResponseWriter, r *http.Request) {
+		var comment struct {
+			ID   string `json:"article"`
+			Text string `json:"text"`
+		}
+		err := json.NewDecoder(r.Body).Decode(&comment)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		c, err := r.Cookie("token")
+		if err != nil {
+			if err == http.ErrNoCookie {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		tknStr := c.Value
+		claims := &auth.Claims{}
+		tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (any, error) {
+			return auth.JWTKey, nil
+		})
+		if err != nil {
+			if err == jwt.ErrSignatureInvalid {
+				http.SetCookie(w, &http.Cookie{
+					Name:    "token",
+					Value:   "",
+					Path:    "/",
+					Expires: time.Now(),
+				})
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			http.SetCookie(w, &http.Cookie{
+				Name:    "token",
+				Value:   "",
+				Path:    "/",
+				Expires: time.Now(),
+			})
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if !tkn.Valid {
+			http.SetCookie(w, &http.Cookie{
+				Name:    "token",
+				Value:   "",
+				Path:    "/",
+				Expires: time.Now(),
+			})
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		claimsDec := tkn.Claims.(*auth.Claims)
+		var result database.User
+		database.Database.Model(&database.User{}).Where("username = ?", claimsDec.Username).First(&result)
+		nwsID, err := strconv.Atoi(comment.ID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		newRep := database.Reply{
+			User:     result,
+			Text:     comment.Text,
+			NewsID:   nwsID,
+			Username: result.Username,
+		}
+		log.Println(newRep)
+		log.Println("posting")
+		log.Println(newRep.Text)
+		res := database.Database.Model(&database.Reply{}).Create(&newRep)
+		log.Println(res.Error)
+		w.WriteHeader(http.StatusOK)
 		return
 	})
 	router.HandleFunc("GET /getart/{id}", func(w http.ResponseWriter, r *http.Request) {
@@ -501,7 +619,7 @@ func main() {
 			return
 		}
 		var article database.News
-		database.Database.Model(&database.News{}).First(&article, "id = ?", id)
+		database.Database.Model(&database.News{}).Preload("Replies").First(&article, "id = ?", id)
 		jsonResp, err := json.Marshal(article)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

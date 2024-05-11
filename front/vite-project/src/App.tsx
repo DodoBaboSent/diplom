@@ -74,6 +74,8 @@ export let AdminLoader = makeLoader(async function () {
             DeletedAt?: string;
             Username: string;
             Email: string;
+            act: boolean;
+            adm: boolean;
           }[]
         >("/admin/users")
         .then((res) => res.data)
@@ -194,11 +196,49 @@ export let ArticleLoader = makeLoader(async function ({
       id: number;
       name: string;
       body: string;
-      rep: { id: number; text: string; UserID: number }[];
+      rep: { id: number; text: string; userid: number; username: string }[];
     }>(`/getart/${id}`)
     .then((res) => res.data)
     .catch(() => null);
+  if (article) {
+    article.rep.reverse();
+  }
   return article;
+});
+export let ArticleAction = makeAction(async function ({
+  request,
+}: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const text = formData.get("text");
+  const id = formData.get("article");
+  if (
+    typeof text != "string" ||
+    text == "" ||
+    text == undefined ||
+    text == null ||
+    typeof id != "string" ||
+    id == "" ||
+    id == null ||
+    id == undefined
+  ) {
+    const err: { warning: string } = { warning: "Поля заполнены неверно" };
+    return err;
+  }
+  const success = await axios
+    .post(`/newcomment`, {
+      article: id,
+      text: text,
+    })
+    .then(() => true)
+    .catch(() => false);
+  if (success == true) {
+    return redirect(`/article/${id}`);
+  } else {
+    const err: { warning: string } = {
+      warning: "Не удалось оставить комментарий",
+    };
+    return err;
+  }
 });
 
 export let PanelLoader = makeLoader(async function () {
@@ -353,6 +393,7 @@ function App() {
           element: <Article />,
           handle: { crumb: () => <p>Article</p> },
           loader: ArticleLoader,
+          action: ArticleAction,
         },
       ],
     },

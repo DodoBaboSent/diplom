@@ -13,8 +13,8 @@ type User struct {
 	Username string `gorm:"unique"`
 	Password string `json:"-"`
 	Email    string `gorm:"unique"`
-	Active   bool   `json:"-"`
-	Admin    bool   `json:"-"`
+	Active   bool   `json:"act"`
+	Admin    bool   `json:"adm"`
 	CityName string `json:"-"`
 	Cities   []City `json:"-"`
 }
@@ -40,8 +40,9 @@ type Reply struct {
 	UpdatedAt time.Time      `json:"updated"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 	Text      string         `json:"text"`
-	User      User           `json:"user"`
-	UserID    int
+	User      User           `json:"-"`
+	UserID    int            `json:"userid"`
+	Username  string         `json:"username"`
 	NewsID    int
 }
 
