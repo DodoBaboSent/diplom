@@ -6,6 +6,7 @@ import { IndexAction, IndexLoader } from "./App";
 import Modal from "react-modal";
 import { Form } from "react-router-dom";
 import Cookies from "universal-cookie";
+import { format } from "date-fns";
 
 const cookies = new Cookies();
 
@@ -53,6 +54,23 @@ type OWMForecast = {
   cnt: number;
   list: OWMRes[];
 };
+type OWMPollution = {
+  coord: { lon: number; lat: number };
+  list: {
+    main: { aqi: number };
+    components: {
+      co: number;
+      no: number;
+      no2: number;
+      o3: number;
+      so2: number;
+      pm2_5: number;
+      pm10: number;
+      nh3: number;
+    };
+    dt: number;
+  }[];
+};
 
 function makeDefault(city: string) {
   axios.patch("/user/defaultCity", {
@@ -74,6 +92,7 @@ function Home() {
   const data = useLoaderData<typeof IndexLoader>();
   const [weather, setWeather] = useState<OWMRes>();
   const [forecast, setForecast] = useState<OWMForecast>();
+  const [pollution, setPollution] = useState<OWMPollution>();
   const [stars, setStars] = useState<OWMRes[]>();
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
 
@@ -106,6 +125,16 @@ function Home() {
         },
       })
       .then((res) => setForecast(res.data));
+  }
+  function getPollution() {
+    axios
+      .get<OWMPollution>(`/airpollution`, {
+        params: {
+          longtitude: weather?.coord.lon,
+          latitude: weather?.coord.lat,
+        },
+      })
+      .then((res) => setPollution(res.data));
   }
 
   useEffect(() => {
@@ -619,6 +648,161 @@ function Home() {
               >
                 Запросить прогноз
               </button>
+              <button
+                className={`${!pollution ? `` : `hidden`} rounded bg-sky-500 text-white text-bold`}
+                onClick={() => getPollution()}
+              >
+                Запросить статистику по загрязнению воздуха
+              </button>
+              {pollution ? (
+                <div
+                  className={`flex gap-2 w-[100%] p-3 rounded flex-col bg-amber-100`}
+                >
+                  {pollution.list.map((el) => {
+                    return (
+                      <>
+                        <div className={`flex flex-col gap-1`}>
+                          <h2 className={`text-2xl font-bold`}>
+                            Индекс качества воздуха: {el.main.aqi}{" "}
+                            {el.main.aqi == 1
+                              ? `- качественное`
+                              : el.main.aqi == 2
+                                ? `- хорошее`
+                                : el.main.aqi == 3
+                                  ? `- нормальное`
+                                  : el.main.aqi == 4
+                                    ? `- плохое`
+                                    : `- очень плохое`}
+                          </h2>
+                          <h3 className={`font-bold`}>
+                            Время замера: {format(el.dt * 1000, "kk:mm")}
+                          </h3>
+                        </div>
+                        <div className={`flex flex-col gap-1`}>
+                          <table className={`table-auto border-collapse`}>
+                            <thead>
+                              <tr className={`border-b`}>
+                                <th className={`border-r`}>Элемент</th>
+                                <th>Количество</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <td className={`border-r break-all text-wrap`}>
+                                  Концентрация CO (
+                                  <a
+                                    href="https://ru.wikipedia.org/wiki/Carbon_monoxide"
+                                    className={`text-cyan-500 underline hover:no-underline`}
+                                  >
+                                    Монооксид углерода
+                                  </a>
+                                  )
+                                </td>
+                                <td className={`break-all text-wrap`}>
+                                  {el.components.co} μg/m3
+                                </td>
+                              </tr>
+                              <tr>
+                                <td className={`break-all text-wrap border-r`}>
+                                  Концентрация NO (
+                                  <a
+                                    href="https://ru.wikipedia.org/wiki/NO"
+                                    className={`text-cyan-500 underline hover:no-underline`}
+                                  >
+                                    Оксид азота
+                                  </a>
+                                  )
+                                </td>
+                                <td>{el.components.no} μg/m3</td>
+                              </tr>
+                              <tr>
+                                <td className={`break-all text-wrap border-r`}>
+                                  Концентрация NO2 (
+                                  <a
+                                    href="https://ru.wikipedia.org/wiki/%D0%9E%D0%BA%D1%81%D0%B8%D0%B4_%D0%B0%D0%B7%D0%BE%D1%82%D0%B0(IV)"
+                                    className={`text-cyan-500 underline hover:no-underline`}
+                                  >
+                                    Диоксид азота
+                                  </a>
+                                  )
+                                </td>
+                                <td>{el.components.no2} μg/m3</td>
+                              </tr>
+                              <tr>
+                                <td className={`break-all text-wrap border-r`}>
+                                  Концентрация O3 (
+                                  <a
+                                    href="https://ru.wikipedia.org/wiki/%D0%9E%D0%B7%D0%BE%D0%BD"
+                                    className={`text-cyan-500 underline hover:no-underline`}
+                                  >
+                                    Озон
+                                  </a>
+                                  )
+                                </td>
+                                <td>{el.components.o3} μg/m3</td>
+                              </tr>
+                              <tr>
+                                <td className={`break-all text-wrap border-r`}>
+                                  Концентрация SO2 (
+                                  <a
+                                    href="https://ru.wikipedia.org/wiki/%D0%9E%D0%BA%D1%81%D0%B8%D0%B4_%D1%81%D0%B5%D1%80%D1%8B(IV)"
+                                    className={`text-cyan-500 underline hover:no-underline`}
+                                  >
+                                    Оксид серы
+                                  </a>
+                                  )
+                                </td>
+                                <td>{el.components.so2} μg/m3</td>
+                              </tr>
+                              <tr>
+                                <td className={`break-all text-wrap border-r`}>
+                                  Концентрация PM2.5 (
+                                  <a
+                                    href="https://en.wikipedia.org/wiki/Particulates"
+                                    className={`text-cyan-500 underline hover:no-underline`}
+                                  >
+                                    Мелкие частицы
+                                  </a>
+                                  )
+                                </td>
+                                <td>{el.components.pm2_5} μg/m3</td>
+                              </tr>
+                              <tr>
+                                <td className={`break-all text-wrap border-r`}>
+                                  Концентрация PM10 (
+                                  <a
+                                    href="https://en.wikipedia.org/wiki/Particulates#Size,_shape,_and_solubility_matter"
+                                    className={`text-cyan-500 underline hover:no-underline`}
+                                  >
+                                    Крупные частицы
+                                  </a>
+                                  )
+                                </td>
+                                <td>{el.components.pm10} μg/m3</td>
+                              </tr>
+                              <tr>
+                                <td className={`break-all text-wrap border-r`}>
+                                  Концентрация NH3 (
+                                  <a
+                                    href="https://ru.wikipedia.org/wiki/%D0%90%D0%BC%D0%BC%D0%B8%D0%B0%D0%BA"
+                                    className={`text-cyan-500 underline hover:no-underline`}
+                                  >
+                                    Аммиак
+                                  </a>
+                                  )
+                                </td>
+                                <td>{el.components.nh3} μg/m3</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    );
+                  })}
+                </div>
+              ) : (
+                <></>
+              )}
               <div
                 className={`${forecast ? `` : `hidden`} flex gap-2 w-[100%] flex-col`}
               >

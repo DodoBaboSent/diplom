@@ -2,6 +2,7 @@ import { useActionData, useLoaderData } from "react-router-typesafe";
 import { ArticleLoader, ArticleAction } from "./App";
 import { Form, useSubmit } from "react-router-dom";
 import Cookies from "universal-cookie";
+import axios from "axios";
 
 const cookies = new Cookies();
 
@@ -69,7 +70,22 @@ function Article() {
           return (
             <div className={`gap-3 flex flex-col`}>
               <div className={`flex flex-col divide-y gap-2`}>
-                <h3 className={`font-bold`}>{el.username}</h3>
+                <div className={`flex flex-row w-[100%]`}>
+                  <h3 className={`font-bold`}>{el.username}</h3>
+                  {privObj.adm ? (
+                    <button
+                      onClick={() => {
+                        axios.get(`/admin/delrep/${el.id}`);
+                        window.location.reload();
+                      }}
+                      className={`font-bold text-white mx-3 p-1 rounded bg-red-500`}
+                    >
+                      Delete
+                    </button>
+                  ) : (
+                    <></>
+                  )}
+                </div>
                 <p className={`break-all text-wrap`}>{el.text}</p>
               </div>
             </div>

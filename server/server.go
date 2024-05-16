@@ -493,15 +493,27 @@ func main() {
 		id, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 		database.Database.Model(&database.User{}).Delete(&database.User{}, "id = ?", id)
 		http.Redirect(w, r, "/admin_panel", 302)
+		return
+	})
+	adminRouter.HandleFunc("/delrep/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id, err := strconv.Atoi(r.PathValue("id"))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		database.Database.Model(&database.Reply{}).Delete(&database.Reply{}, "id = ?", id)
+		w.WriteHeader(http.StatusOK)
 		return
 	})
 	adminRouter.HandleFunc("/articledel/{id}", func(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 		database.Database.Model(&database.News{}).Delete(&database.News{}, "id = ?", id)
 		http.Redirect(w, r, "/admin_panel", 302)
@@ -534,6 +546,27 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(jsonResp)
 		return
+	})
+	router.HandleFunc("GET /airpollution", func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query()
+		longtitude, present := query["longtitude"]
+		if !present || len(longtitude) == 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		latitude := query["latitude"]
+		if !present || len(latitude) == 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		resp, err := http.Get(fmt.Sprintf("https://api.openweathermap.org/data/2.5/air_pollution?lat=%s&lon=%s&appid=%s", latitude[0], longtitude[0], owmApiKey))
+		if err != nil {
+			log.Panicln(err)
+		}
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(body)
 	})
 	router.HandleFunc("POST /newcomment", func(w http.ResponseWriter, r *http.Request) {
 		var comment struct {
