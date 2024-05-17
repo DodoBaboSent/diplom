@@ -7,6 +7,7 @@ import Modal from "react-modal";
 import { Form } from "react-router-dom";
 import Cookies from "universal-cookie";
 import { format } from "date-fns";
+import MapComponent from "./components/map";
 
 const cookies = new Cookies();
 
@@ -93,6 +94,7 @@ function Home() {
   const [weather, setWeather] = useState<OWMRes>();
   const [forecast, setForecast] = useState<OWMForecast>();
   const [pollution, setPollution] = useState<OWMPollution>();
+  const [clouds, setClouds] = useState<boolean>();
   const [stars, setStars] = useState<OWMRes[]>();
   const [modalIsOpen, setModalIsOpen] = useState<boolean>(false);
 
@@ -654,6 +656,20 @@ function Home() {
               >
                 Запросить статистику по загрязнению воздуха
               </button>
+              <button
+                className={`${!clouds ? `` : `hidden`} rounded bg-sky-500 text-white text-bold`}
+                onClick={() => setClouds(true)}
+              >
+                Запросить карту облаков
+              </button>
+              {clouds ? (
+                <MapComponent
+                  center={[weather.coord.lon, weather.coord.lat]}
+                  zoom={5}
+                />
+              ) : (
+                <></>
+              )}
               {pollution ? (
                 <div
                   className={`flex gap-2 w-[100%] p-3 rounded flex-col bg-amber-100`}

@@ -567,6 +567,22 @@ func main() {
 		body, err := io.ReadAll(resp.Body)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(body)
+		return
+	})
+	router.HandleFunc("GET /map/{layer}/{z}/{x}/{y}", func(w http.ResponseWriter, r *http.Request) {
+		layer := r.PathValue("layer")
+		z := r.PathValue("z")
+		x := r.PathValue("x")
+		y := r.PathValue("y")
+		resp, err := http.Get(fmt.Sprintf("https://tile.openweathermap.org/map/%s/%s/%s/%s.png?appid=%s", layer, z, x, y, owmApiKey))
+		if err != nil {
+			log.Panicln(err)
+		}
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		w.Header().Set("Content-Type", "image/png")
+		w.Write(body)
+		return
 	})
 	router.HandleFunc("POST /newcomment", func(w http.ResponseWriter, r *http.Request) {
 		var comment struct {
