@@ -10,10 +10,18 @@ function Article() {
   const article = useLoaderData<typeof ArticleLoader>();
   const data = useActionData<typeof ArticleAction>();
   const token: string = cookies.get("token");
-  const tokenParse = token.split(".");
-  console.log(tokenParse);
-  const privObj: { username: string; active: boolean; adm: boolean } =
-    JSON.parse(atob(tokenParse[1]));
+  let privObj: { username: string; active: boolean; adm: boolean };
+  if (token) {
+    const tokenParse = token.split(".");
+    console.log(tokenParse);
+    privObj = JSON.parse(atob(tokenParse[1]));
+  } else {
+    privObj = {
+      username: "Not logged in",
+      active: false,
+      adm: false,
+    };
+  }
 
   const submit = useSubmit();
   const handleSubmit = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
