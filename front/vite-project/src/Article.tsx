@@ -31,8 +31,8 @@ function Article() {
   };
 
   return (
-    <div className={`flex flex-col gap-3`}>
-      <div className={`flex flex-col gap-3 divide-y`}>
+    <div className={`flex flex-col gap-3 w-[100%]`}>
+      <div className={`flex flex-col gap-3 divide-y w-[100%]`}>
         {article ? (
           <div className={`flex flex-col w-[100%] gap-3 divide-y`}>
             <h1 className={`text-3xl font-bold`}>{article.name}</h1>
@@ -56,13 +56,15 @@ function Article() {
               type="text"
               id="text_id"
               className={`border p-2`}
+              hidden={!privObj.active}
             />
           </div>
           <button
             className={`rounded bg-green-400 font-bold`}
             onClick={handleSubmit}
+            disabled={!privObj.active}
           >
-            Submit
+            {privObj.active ? `Submit` : `Войдите что бы отвечать`}
           </button>
         </Form>
       </div>

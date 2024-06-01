@@ -10,7 +10,7 @@ export function Root() {
     <>
       <Nav isClosed={navClosed} onClick={setNavClosed} />
       <div
-        className={`grid-rows-[fit-content(100px)_max(100vh,_100%)_auto] grid-cols-[[start-content]_2fr_[end-content_start-nav]_1fr_[end-nav]] h-[100%] grid ${navClosed ? `animate-blur-in` : `blur-none`} divide-y`}
+        className={`grid-rows-[fit-content(100px)_max(100%,_83.3vh)_100px] grid-cols-[[start-content]_2fr_[end-content_start-nav]_1fr_[end-nav]] h-[100%] grid ${navClosed ? `animate-blur-in` : `blur-none`} divide-y`}
       >
         <div
           className={`col-start-1 col-end-3 flex bg-white flex-col sticky z-50 top-0 px-3 divide-y`}
@@ -43,24 +43,42 @@ export function Root() {
         >
           <Outlet />
         </div>
-        <div className="hidden lg:flex lg:flex-col lg:justify-start gap-4 lg:items-center">
-          <h1 className="text-3xl font-bold">Navigation</h1>
-          <ol className={`flex flex-col gap-2 text-xl`}>
+        <div className="hidden lg:flex lg:flex-col lg:border-l lg:justify-start gap-4 lg:items-center">
+          <h1 className="text-3xl font-bold">Навигация</h1>
+          <ol className={`flex flex-col gap-2 text-xl divide-y w-[100%] px-1`}>
             <li>
-              <Link to="/about">About</Link>
+              <Link to="/about" className={`text-left`}>
+                О нас
+              </Link>
             </li>
             <li>
-              <Link to="/login">User</Link>
+              <Link to="/login" className={`text-left`}>
+                Мой аккаунт
+              </Link>
             </li>
             <li>
-              <Link to="/search">Search</Link>
+              <Link to="/search" className={`text-left`}>
+                Поиск
+              </Link>
             </li>
             <li>
-              <Link to="/articles">News</Link>
+              <Link to="/articles" className={`text-left`}>
+                Новости
+              </Link>
             </li>
           </ol>
         </div>
-        <div className="bg-amber-500 col-start-1 col-end-3"></div>
+        <div className="col-start-1 col-end-3">
+          <div className={`w-[100%] h-[100%] flex flex-row`}>
+            <div className={`w-[100%] h-[100%] flex flex-col basis-1/3`}></div>
+            <div className={`w-[100%] h-[100%] flex flex-col basis-1/3`}>
+              <p className={`text-slate-300 text-center`}>
+                Наугольнов Артём Игоревич 2024
+              </p>
+            </div>
+            <div className={`w-[100%] h-[100%] flex flex-col basis-1/3`}></div>
+          </div>
+        </div>
       </div>
     </>
   );

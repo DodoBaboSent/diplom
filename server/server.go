@@ -68,6 +68,8 @@ func main() {
 	router.HandleFunc("GET /refresh", auth.RefreshJWT)
 	protectedRouter := http.NewServeMux()
 	protectedRouter.HandleFunc("PATCH /defaultCity", func(w http.ResponseWriter, r *http.Request) {
+		// Принимаем название города для сохранения
+		// возвращаемся при ошибке
 		var city struct {
 			Name string `json:"city"`
 		}
@@ -76,7 +78,7 @@ func main() {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		log.Println(city)
+		// Проверяем токен, возвращаемся при ошибке подписи
 		cookie, err := r.Cookie("token")
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -98,6 +100,8 @@ func main() {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
+		// Получаем имя пользователя из токена и обновляем данные в бд
+		// при ошибке возвращаемся
 		var name string
 		claimss := tkn.Claims.(*auth.Claims)
 		name = fmt.Sprint(claimss.Username)
@@ -106,6 +110,9 @@ func main() {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		// Получаем погодные данные для обновления данных о погоде
+		// на фронтенде клиента, сериализируем, отправляем, возвращаемся
+		// при ошибке
 		weather := owm.GetWeatherName(city.Name)
 
 		weather.Key = "redacted"
@@ -119,6 +126,8 @@ func main() {
 		return
 	})
 	protectedRouter.HandleFunc("DELETE /star", func(w http.ResponseWriter, r *http.Request) {
+		// чтение данных о городе из тела запроса
+		// возвращаемся при ошибке чтения
 		var city struct {
 			Name string `json:"city"`
 		}
@@ -127,6 +136,8 @@ func main() {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		// читаем куки из тела запроса, проверяем
+		// токен (несколько раз), возвращаемся при ошибке проверки подписи
 		cookie, err := r.Cookie("token")
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -148,6 +159,9 @@ func main() {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
+		// читаем данные из бд, проверяем наличие города
+		// удаляем запись, если город существует
+		// возвращаемся при отсутствии
 		var name string
 		claimss := tkn.Claims.(*auth.Claims)
 		name = fmt.Sprint(claimss.Username)
@@ -175,6 +189,8 @@ func main() {
 		return
 	})
 	protectedRouter.HandleFunc("PUT /star", func(w http.ResponseWriter, r *http.Request) {
+		// Читаем город для добавления в избранное из запроса
+		// декодируем джейсон, возвращаемся при ошибке
 		var city struct {
 			Name string `json:"name"`
 		}
@@ -183,10 +199,13 @@ func main() {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		// читаем куки, возвращаемся при ошибке
 		cookie, err := r.Cookie("token")
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
+		// читаем заявления JWT токена, проверяем подпись (несколько раз),
+		// возвращаемся при ошибке
 		tknStr := cookie.Value
 		claims := &auth.Claims{}
 		tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (any, error) {
@@ -204,6 +223,8 @@ func main() {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
+		// читаем данные из БД, удостовериваемся что мы не создаем
+		// дубликат записи, возвращаемся при ошибках
 		var name string
 		claimss := tkn.Claims.(*auth.Claims)
 		name = fmt.Sprint(claimss.Username)
@@ -232,10 +253,13 @@ func main() {
 			return
 		}
 		w.WriteHeader(http.StatusTeapot)
+		return
 
 	})
 	protectedRouter.HandleFunc("GET /star", func(w http.ResponseWriter, r *http.Request) {
 
+		// получаем пользователя из токена
+		// возвращаемся при ошибке проверке подписи
 		cookie, err := r.Cookie("token")
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -257,6 +281,10 @@ func main() {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
+		// читаем имя пользователя из токена
+		// читаем данные из БД с использованием
+		// этого имени (имя пользователя уникально, установлено
+		// ограничение на уникальность в модели таблицы БД)
 		var name string
 		claimss := tkn.Claims.(*auth.Claims)
 		name = fmt.Sprint(claimss.Username)
@@ -265,6 +293,8 @@ func main() {
 		var res struct {
 			Cities []database.City `json:"cities"`
 		}
+		// сериализуем данные и отправляем обратно клиенту
+		// для обработки
 		res.Cities = result.Cities
 		jsonResp, err := json.Marshal(res)
 		if err != nil {
@@ -284,6 +314,8 @@ func main() {
 
 	})
 	protectedRouter.HandleFunc("GET /get", func(w http.ResponseWriter, r *http.Request) {
+		// читаем и проверяем токен
+		// возвращаемся при ошибке валидации
 		cookie, err := r.Cookie("token")
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -305,11 +337,14 @@ func main() {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
+		// читаем данные о городе из базы данных
 		var name string
 		claimss := tkn.Claims.(*auth.Claims)
 		name = fmt.Sprint(claimss.Username)
 		var result database.User
 		database.Database.Model(&database.User{}).Where("username = ?", name).First(&result)
+		// кодируем данные в JSON и отправляем клиенту
+		// возвращаемся при ошибке
 		var resp struct {
 			Name string `json:"city"`
 		}
@@ -332,6 +367,8 @@ func main() {
 		return
 	})
 	router.HandleFunc("GET /user/checkAdmin", func(w http.ResponseWriter, r *http.Request) {
+		// Читаем токен, проверяем валидность,
+		// возвращаемся при ошибке проверки подписи
 		c, err := r.Cookie("token")
 		if err != nil {
 			if err == http.ErrNoCookie {
@@ -377,6 +414,8 @@ func main() {
 			return
 		}
 
+		// проверяем активацию аккаунта
+		// возвращаемся если аккаунт не активирован
 		claimsDec := tkn.Claims.(*auth.Claims)
 		var result database.User
 		database.Database.Model(&database.User{}).Where("username = ?", claimsDec.Username).First(&result)
@@ -409,6 +448,9 @@ func main() {
 			w.Write(jsonResp)
 			return
 		}
+		// по пути обновляем срок действия токена
+		// возвращаем токен где установлено заявление, что
+		// пользователь администратор
 		expirTime := time.Now().Add(24 * 5 * time.Hour)
 		claimsDec.ExpiresAt = jwt.NewNumericDate(expirTime)
 		claimsDec.Activation = true
@@ -450,6 +492,8 @@ func main() {
 		return
 	})
 	adminRouter.HandleFunc("/activate/{id}", func(w http.ResponseWriter, r *http.Request) {
+		// получаем айди из пути
+		// используем айди для активации
 		id, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -460,6 +504,8 @@ func main() {
 		return
 	})
 	adminRouter.HandleFunc("/deactivate/{id}", func(w http.ResponseWriter, r *http.Request) {
+		// получаем айди из пути
+		// используем айди для удаления активации
 		id, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -470,6 +516,8 @@ func main() {
 		return
 	})
 	adminRouter.HandleFunc("/makeadm/{id}", func(w http.ResponseWriter, r *http.Request) {
+		// получаем айди из пути
+		// используем айди для добавления прав администратора
 		id, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -480,6 +528,8 @@ func main() {
 		return
 	})
 	adminRouter.HandleFunc("/remadm/{id}", func(w http.ResponseWriter, r *http.Request) {
+		// получаем айди из пути, возвращаемся при ошибке
+		// используем айди для удаления
 		id, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -490,6 +540,8 @@ func main() {
 		return
 	})
 	adminRouter.HandleFunc("/userdel/{id}", func(w http.ResponseWriter, r *http.Request) {
+		// получаем айди из пути
+		// возвращаемся при ошибке, используем айди для удаления
 		id, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -500,6 +552,8 @@ func main() {
 		return
 	})
 	adminRouter.HandleFunc("/delrep/{id}", func(w http.ResponseWriter, r *http.Request) {
+		// получаем айди ответа на новость из пути
+		// возвращаемся при ошибке, используем id для удаления
 		id, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -510,6 +564,8 @@ func main() {
 		return
 	})
 	adminRouter.HandleFunc("/articledel/{id}", func(w http.ResponseWriter, r *http.Request) {
+		// получаем айди из пути
+		// возвращаемся при ошибке, используем id для удаления
 		id, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -520,6 +576,8 @@ func main() {
 		return
 	})
 	adminRouter.HandleFunc("POST /new_article", func(w http.ResponseWriter, r *http.Request) {
+		// Получение данных о статье из тела запроса
+		// возвращаемся при ошибке
 		var article struct {
 			Name string `json:"name"`
 			Body string `json:"body"`
@@ -529,6 +587,8 @@ func main() {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		// создаем новую статью
+		// возвращаемся при ошибке
 		result := database.Database.Model(&database.News{}).Create(&database.News{Name: article.Name, Body: article.Body})
 		if result.Error != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -537,8 +597,12 @@ func main() {
 		return
 	})
 	router.HandleFunc("GET /news", func(w http.ResponseWriter, r *http.Request) {
+		// Создаем массив для хранения новостей и получаем
+		// данные из базы данных
 		var news []database.News
 		database.Database.Preload("Replies").Find(&news)
+		// Сериализируем данные, возвращаемся при ошибке
+		// и отправляем данные клиенту
 		jsonResp, err := json.Marshal(news)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -548,6 +612,8 @@ func main() {
 		return
 	})
 	router.HandleFunc("GET /airpollution", func(w http.ResponseWriter, r *http.Request) {
+		// получаем долготу и широту из тела запроса,
+		// возвращаемся если данных параметров нет
 		query := r.URL.Query()
 		longtitude, present := query["longtitude"]
 		if !present || len(longtitude) == 0 {
@@ -559,32 +625,45 @@ func main() {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		resp, err := http.Get(fmt.Sprintf("https://api.openweathermap.org/data/2.5/air_pollution?lat=%s&lon=%s&appid=%s", latitude[0], longtitude[0], owmApiKey))
+		// форвардим запрос на API OpenWeatherMap,
+		// очищаем память от запроса когда функция прекращает свое действие
+		apiUrl := fmt.Sprintf("https://api.openweathermap.org/data/2.5/air_pollution?lat=%s&lon=%s&appid=%s", latitude[0], longtitude[0], owmApiKey)
+		resp, err := http.Get(apiUrl)
 		if err != nil {
 			log.Panicln(err)
 		}
 		defer resp.Body.Close()
+		// отправляем ответ клиенту для обработки
+		// на клиенте
 		body, err := io.ReadAll(resp.Body)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(body)
 		return
 	})
 	router.HandleFunc("GET /map/{layer}/{z}/{x}/{y}", func(w http.ResponseWriter, r *http.Request) {
+		// Получаем параметры из пути запроса,
+		// проверка на ошибки происходит на клиенте
 		layer := r.PathValue("layer")
 		z := r.PathValue("z")
 		x := r.PathValue("x")
 		y := r.PathValue("y")
-		resp, err := http.Get(fmt.Sprintf("https://tile.openweathermap.org/map/%s/%s/%s/%s.png?appid=%s", layer, z, x, y, owmApiKey))
+		// формируем ссылку для запроса на АПИ OWM
+		// делаем запрос, очищаем память при выходе из функции
+		apiUrl := fmt.Sprintf("https://tile.openweathermap.org/map/%s/%s/%s/%s.png?appid=%s", layer, z, x, y, owmApiKey)
+		resp, err := http.Get(apiUrl)
 		if err != nil {
 			log.Panicln(err)
 		}
 		defer resp.Body.Close()
+		// перенаправляем клиенту полученное изображение
 		body, err := io.ReadAll(resp.Body)
 		w.Header().Set("Content-Type", "image/png")
 		w.Write(body)
 		return
 	})
 	router.HandleFunc("POST /newcomment", func(w http.ResponseWriter, r *http.Request) {
+		// Получение данных из тела запроса
+		// возвращаемся при ошибке
 		var comment struct {
 			ID   string `json:"article"`
 			Text string `json:"text"`
@@ -594,6 +673,7 @@ func main() {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		// проверяем токен, возвращаемся при ошибке подписи
 		c, err := r.Cookie("token")
 		if err != nil {
 			if err == http.ErrNoCookie {
@@ -639,6 +719,7 @@ func main() {
 			return
 		}
 
+		// получаем необходимые данные о пользователе для создания новой записи об ответе в БД
 		claimsDec := tkn.Claims.(*auth.Claims)
 		var result database.User
 		database.Database.Model(&database.User{}).Where("username = ?", claimsDec.Username).First(&result)
@@ -653,20 +734,18 @@ func main() {
 			NewsID:   nwsID,
 			Username: result.Username,
 		}
-		log.Println(newRep)
-		log.Println("posting")
-		log.Println(newRep.Text)
-		res := database.Database.Model(&database.Reply{}).Create(&newRep)
-		log.Println(res.Error)
+		database.Database.Model(&database.Reply{}).Create(&newRep)
 		w.WriteHeader(http.StatusOK)
 		return
 	})
 	router.HandleFunc("GET /getart/{id}", func(w http.ResponseWriter, r *http.Request) {
+		// получаем айди из пути
 		id, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		// читаем новость по айди и отправляем обратно в качестве json
 		var article database.News
 		database.Database.Model(&database.News{}).Preload("Replies").First(&article, "id = ?", id)
 		jsonResp, err := json.Marshal(article)
@@ -681,6 +760,8 @@ func main() {
 	})
 	router.Handle("/admin/", http.StripPrefix("/admin", auth.AdminMiddleware(adminRouter)))
 	router.HandleFunc("POST /register", func(w http.ResponseWriter, r *http.Request) {
+		// создаем новую переменную для хранения данных о новом пользователе
+		// читаем данные из тела пост запроса и возвращаемся при ошибке
 		var user struct {
 			Username string `json:"username"`
 			Mail     string `json:"mail"`
@@ -691,6 +772,7 @@ func main() {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		// проверяем наличие пользователя (так же проверяем удаляли ли пользователя ранее)
 		var result database.User
 		if database.Database.Unscoped().Model(&database.User{}).First(&result, "username = ?", user.Username).Error != nil {
 			if result.Username == user.Username {
@@ -716,11 +798,14 @@ func main() {
 				}
 			}
 		}
+		// хэшируем пароль и создаем новую запись
 		h := sha256.New()
 		h.Write([]byte(user.Password))
 		newUser := database.User{Password: string(h.Sum(nil)), Username: user.Username, Active: false, Email: user.Mail}
 		database.Database.Create(&newUser)
 
+		// формируем JWT токен для отправки клиенту, проверяем подпись
+		// созданного токена
 		expirTime := time.Now().Add(24 * 5 * time.Hour)
 		claims := &auth.Claims{
 			Username:   user.Username,
@@ -735,6 +820,7 @@ func main() {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		// создаем новое письмо по шаблону, возвращаемся при ошибке
 		hostname := os.Getenv("HOST")
 		tmplData := TmplData{
 			URL: fmt.Sprintf(`%s/token/activate/%s`, hostname, strconv.FormatUint(uint64(newUser.ID), 10)),
@@ -744,11 +830,13 @@ func main() {
 			log.Println(err)
 		}
 
+		// создаем куки
 		http.SetCookie(w, &http.Cookie{
 			Name:    "token",
 			Value:   tokenString,
 			Expires: expirTime,
 		})
+		// отправляем письмо с телом html документа, возвращаемся при ошибке
 		var tpl bytes.Buffer
 		if err := tmpl.Execute(&tpl, tmplData); err != nil {
 			log.Println(err)
@@ -766,10 +854,12 @@ func main() {
 		return
 	})
 	router.HandleFunc("GET /weather", func(w http.ResponseWriter, r *http.Request) {
+		// Извлекаем параметры из GET запроса, проверяем наличие координат или имени
 		query := r.URL.Query()
 		var weather *openweather.CurrentWeatherData
 		longtitude, present := query["longtitude"]
 		if present || len(longtitude) > 0 {
+			// конвертируем строки в числа
 			latitude := query["latitude"]
 			if !present || len(latitude) == 0 {
 				w.WriteHeader(http.StatusBadRequest)
@@ -787,8 +877,10 @@ func main() {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
+			// делаем запрос на получение погодных условий
 			weather = owm.GetWeatherLongLat(longtitudeFloat, latitudeFloat)
 		} else {
+			// получаем название и делаем запрос на получение погодных условий
 			name, present := query["city"]
 			if !present || len(name) == 0 {
 				log.Println("no city")
@@ -798,6 +890,7 @@ func main() {
 			weather = owm.GetWeatherName(name[0])
 		}
 
+		// вырезаем чувствительную информацию, сериализируем структуру в JSON и отвечаем клиенту
 		weather.Key = "redacted"
 		w.Header().Set("Content-Type", "application/json")
 		jsonResp, err := json.Marshal(weather)
@@ -809,6 +902,8 @@ func main() {
 		return
 	})
 	router.HandleFunc("GET /forecast", func(w http.ResponseWriter, r *http.Request) {
+		// Получение координат из тела запроса, перевод их в
+		// тип float, проверяем наличие и успех перевода, иначе возвращаем ошибку
 		query := r.URL.Query()
 		longtitude, present := query["longtitude"]
 		if !present || len(longtitude) == 0 {
@@ -820,14 +915,19 @@ func main() {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		resp, err := http.Get(fmt.Sprintf("https://api.openweathermap.org/data/2.5/forecast?lat=%s&lon=%s&appid=%s&units=metric&lang=ru&cnt=5", latitude[0], longtitude[0], owmApiKey))
+		// форвардим запрос на API OpenWeatherMap, подставив необходимые данные
+		apiUrl := fmt.Sprintf("https://api.openweathermap.org/data/2.5/forecast?lat=%s&lon=%s&appid=%s&units=metric&lang=ru&cnt=5", latitude[0], longtitude[0], owmApiKey)
+		resp, err := http.Get(apiUrl)
 		if err != nil {
 			log.Panicln(err)
 		}
+		// форвардим ответ API OpenWeatherMap обратно клиенту для обработки
+		// и возвращаемся
 		defer resp.Body.Close()
 		body, err := io.ReadAll(resp.Body)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(body)
+		return
 	})
 
 	server := http.Server{

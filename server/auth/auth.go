@@ -4,8 +4,6 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 	"server/database"
 	"time"
@@ -28,32 +26,31 @@ type Claims struct {
 }
 
 func AuthJWT(w http.ResponseWriter, r *http.Request) {
+	// Чтение реквизитов аккаунта
 	var creds Credentials
 	err := json.NewDecoder(r.Body).Decode(&creds)
 	if err != nil {
+		// В случае отсутствия реквизитов в теле, возвращаем
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintln(w, "No creds")
 		return
 	}
 
+	// Чтение из базы данных
 	var result database.User
 	if err := database.Database.Model(&database.User{}).Where("username = @name OR email = @name", sql.Named("name", creds.Username)).First(&result).Error; err != nil {
-		log.Println("doesnt exist")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+	// Сравниваем хэши
 	expectedPass := result.Password
 	credsHash := sha256.New()
 	credsHash.Write([]byte(creds.Password))
 	if expectedPass != string(credsHash.Sum(nil)) {
-		log.Println(expectedPass)
-		log.Println(credsHash.Sum(nil))
-		log.Println(string(credsHash.Sum(nil)))
-		log.Println("wrong pass")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
+	// Составляем токен
 	expirTime := time.Now().Add(24 * 5 * time.Hour)
 	claims := &Claims{
 		Username:   result.Username,
@@ -63,17 +60,21 @@ func AuthJWT(w http.ResponseWriter, r *http.Request) {
 			ExpiresAt: jwt.NewNumericDate(expirTime),
 		},
 	}
+	// Подписываем токен
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(JWTKey)
 	if err != nil {
+		// В случае ошибки подписи, возвращаем
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	// Отвечаем, одновременно устанавливая токен пользователя
 	http.SetCookie(w, &http.Cookie{
 		Name:    "token",
 		Value:   tokenString,
 		Expires: expirTime,
 	})
+	return
 }
 
 func RefreshTokenMiddleware(next http.Handler) http.Handler {
@@ -250,6 +251,8 @@ func AdminMiddleware(next http.Handler) http.Handler {
 }
 
 func RefreshJWT(w http.ResponseWriter, r *http.Request) {
+	// Чтение токена из куки, возвращаемся в случае отсутсвия куки или другой, непредвиденной
+	// ошибки
 	c, err := r.Cookie("token")
 	if err != nil {
 		if err == http.ErrNoCookie {
@@ -259,6 +262,8 @@ func RefreshJWT(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	// Извлекаем информацию из токена, проверяем сигнатуру, возвращаемся если сигнатура невалидна
+	// или произошла непредвиденная ошибка
 	tknStr := c.Value
 	claims := &Claims{}
 	tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (any, error) {
@@ -277,6 +282,7 @@ func RefreshJWT(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Извлекаем и проверяем "заявления" токена, возвращаемся если аккаунт не активирован
 	claimsDec := tkn.Claims.(*Claims)
 	if claimsDec.Activation != true {
 		var warning struct {
@@ -293,6 +299,8 @@ func RefreshJWT(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(jsonResp)
 	}
+	// обновляем срок истечения действия токена и конструируем новый токен, подписываем или
+	// возвращаемся при непредвиденной ошибке
 	expirTime := time.Now().Add(24 * 5 * time.Hour)
 	claims.ExpiresAt = jwt.NewNumericDate(expirTime)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -301,6 +309,7 @@ func RefreshJWT(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	// устанавливаем куки
 	http.SetCookie(w, &http.Cookie{
 		Name:    "token",
 		Value:   tokenString,

@@ -239,14 +239,18 @@ function Home() {
         <h1 className={`text-2xl lg:text-3xl font-bold py-3`}>
           Температура в вашем городе
         </h1>
-        <button
-          onClick={() => {
-            setModalIsOpen(true);
-          }}
-          className={`text-underline`}
-        >
-          Не ваш город?
-        </button>
+        {token ? (
+          <button
+            onClick={() => {
+              setModalIsOpen(true);
+            }}
+            className={`text-underline`}
+          >
+            Не ваш город?
+          </button>
+        ) : (
+          <></>
+        )}
         <Modal isOpen={modalIsOpen}>
           <div className={`flex flex-col gap-3`}>
             <div className={`flex flex-row justify-end`}>
@@ -513,7 +517,7 @@ function Home() {
                       viewBox="0 0 24 24"
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
-                      className={`inline-block hover:cursor-pointer`}
+                      className={`inline-block hover:cursor-pointer ${token ? `` : `hidden`}`}
                       onClick={() => {
                         makeDefault(weather.name);
                       }}
