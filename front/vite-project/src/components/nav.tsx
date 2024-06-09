@@ -88,7 +88,7 @@ export function Nav(props: NavProps) {
           </div>
           <div className={`flex flex-col gap-3 p-3`}>
             <ul className={`list-inside`}>
-              <h1 className={`text-xl font-bold`}>Information</h1>
+              <h1 className={`text-xl font-bold`}>Информация</h1>
               <li className={`indent-3`}>
                 <Link to={`/about`} onClick={closeNav}>
                   <svg
@@ -120,12 +120,12 @@ export function Nav(props: NavProps) {
                       </g>{" "}
                     </g>
                   </svg>
-                  About
+                  О нас
                 </Link>
               </li>
             </ul>
             <ul className={`list-inside`}>
-              <h1 className={`text-xl font-bold`}>User</h1>
+              <h1 className={`text-xl font-bold`}>Мой аккаунт</h1>
               <li className={`indent-3`}>
                 <Link to={`/login`} onClick={closeNav}>
                   <svg
@@ -153,7 +153,7 @@ export function Nav(props: NavProps) {
                       ></path>
                     </g>
                   </svg>
-                  User Panel
+                  Панель пользователя
                 </Link>
               </li>
               <li>
@@ -183,7 +183,7 @@ export function Nav(props: NavProps) {
                       ></path>{" "}
                     </g>
                   </svg>
-                  Search
+                  Поиск
                 </Link>
               </li>
               <li>
@@ -214,7 +214,7 @@ export function Nav(props: NavProps) {
                       </g>{" "}
                     </g>
                   </svg>{" "}
-                  News
+                  Новости
                 </Link>
               </li>
             </ul>

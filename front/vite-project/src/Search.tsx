@@ -56,6 +56,7 @@ function Search() {
     success: boolean;
     message?: string;
   }>();
+  const token = cookies.get("token");
 
   async function starCity(data: OWMRes) {
     await axios
@@ -67,8 +68,6 @@ function Search() {
         setSuccess({ success: false, message: err.response.data.message });
       });
   }
-
-  const token = cookies.get("token");
 
   useEffect(() => {
     if (data?.coord.lat !== 0) {

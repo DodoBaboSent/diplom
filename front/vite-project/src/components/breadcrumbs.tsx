@@ -38,7 +38,7 @@ export function Breadcrumbs() {
               ></path>{" "}
             </g>
           </svg>
-          Home
+          Домой
         </Link>
       </li>
       {crumbs.length != 0 ? (

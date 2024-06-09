@@ -33,6 +33,7 @@ type News struct {
 	Name      string         `json:"name"`
 	Body      string         `json:"body"`
 	Replies   []Reply        `json:"rep"`
+	Continent string         `json:"cont"`
 }
 type Reply struct {
 	ID        uint           `gorm:"primarykey" json:"id"`

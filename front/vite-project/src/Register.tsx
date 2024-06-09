@@ -16,14 +16,14 @@ function Register() {
       )}
       <Form className={`flex flex-col gap-3`} method="post">
         <div className={`flex flex-col gap-3`}>
-          <label htmlFor="username_id">Username </label>
+          <label htmlFor="username_id">Имя пользователя</label>
           <input
             name="username"
             type="text"
             id="username_id"
             className={`border p-2`}
           />
-          <label htmlFor="mail_id">Email </label>
+          <label htmlFor="mail_id">Электронная почта</label>
           <input
             name="mail"
             type="text"
@@ -31,7 +31,7 @@ function Register() {
             className={`border p-2`}
           />
 
-          <label htmlFor="password_id">Password </label>
+          <label htmlFor="password_id">Пароль</label>
           <input
             name="password"
             type="password"
@@ -40,10 +40,10 @@ function Register() {
           />
         </div>
         <button type="submit" className={`bg-slate-300 p-3 w-[100%]`}>
-          Submit
+          Зарегистрироваться
         </button>
       </Form>
-      <Link to="/newUser">Already have an account? Sign in</Link>
+      <Link to="/newUser">Войти в уже существующий аккаунт</Link>
     </>
   );
 }

@@ -132,11 +132,20 @@ function AdminPanel() {
           />
         </div>
         <div className={`flex flex-col gap-3`}>
+          <label htmlFor="cont_id">Название </label>
+          <select id="cont_id" name="cont" className={`border p-2`}>
+            <option value="eurasia">Евразия</option>
+            <option value="northam">Северная Америка</option>
+            <option value="southam">Южная Америка</option>
+            <option value="africa">Африка</option>
+          </select>
+        </div>
+        <div className={`flex flex-col gap-3`}>
           <label htmlFor="body_id">Текст </label>
           <textarea name="body" id="body_id" className={`border p-2`} />
         </div>
         <button type="submit" className={`bg-slate-300 p-3 w-[30%]`}>
-          Submit
+          Опубликовать
         </button>
       </Form>
       {err ? (

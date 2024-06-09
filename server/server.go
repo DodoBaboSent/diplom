@@ -579,8 +579,9 @@ func main() {
 		// Получение данных о статье из тела запроса
 		// возвращаемся при ошибке
 		var article struct {
-			Name string `json:"name"`
-			Body string `json:"body"`
+			Name      string `json:"name"`
+			Body      string `json:"body"`
+			Continent string `json:"cont"`
 		}
 		err := json.NewDecoder(r.Body).Decode(&article)
 		if err != nil {
@@ -589,7 +590,7 @@ func main() {
 		}
 		// создаем новую статью
 		// возвращаемся при ошибке
-		result := database.Database.Model(&database.News{}).Create(&database.News{Name: article.Name, Body: article.Body})
+		result := database.Database.Model(&database.News{}).Create(&database.News{Name: article.Name, Body: article.Body, Continent: article.Continent})
 		if result.Error != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}

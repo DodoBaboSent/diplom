@@ -29,11 +29,14 @@ export let AdminAction = makeAction(async function ({
   const formData = await request.formData();
   const name = formData.get("name");
   const body = formData.get("body");
+  const continent = formData.get("cont");
   if (
     typeof name != "string" ||
     name == "" ||
     typeof body != "string" ||
-    body == ""
+    body == "" ||
+    typeof continent != "string" ||
+    continent == ""
   ) {
     const err: { warning: string } = { warning: "Поля заполнены неправильно" };
     return err;
@@ -42,6 +45,7 @@ export let AdminAction = makeAction(async function ({
     .post("/admin/new_article", {
       name: name,
       body: body,
+      cont: continent,
     })
     .then(() => true)
     .catch(() => false);
@@ -153,7 +157,7 @@ export let LoginLoader = makeLoader(async function () {
 
 export let ArticlesLoader = makeLoader(async function () {
   const articles = await axios
-    .get<{ id: string; name: string; body: string }[]>("/news")
+    .get<{ id: string; name: string; body: string; cont: string }[]>("/news")
     .then((res) => res.data)
     .catch(() => null);
   return articles;
@@ -197,6 +201,7 @@ export let ArticleLoader = makeLoader(async function ({
       name: string;
       body: string;
       rep: { id: number; text: string; userid: number; username: string }[];
+      cont: string;
     }>(`/getart/${id}`)
     .then((res) => res.data)
     .catch(() => null);
@@ -249,7 +254,13 @@ export let PanelLoader = makeLoader(async function () {
     .then((res) => {
       return res.data;
     })
-    .catch((reason) => console.log(reason));
+    .catch(() => {
+      return {
+        cities: [],
+        warning: "Не удалось загрузить данные с сервера",
+        cod: 15,
+      };
+    });
   const admin = await axios
     .get<{ admin: boolean }>("/user/checkAdmin")
     .then((res) => res.data)
@@ -307,7 +318,7 @@ export let LoginAction = makeAction(async function ({
     console.log("success");
     return redirect("/panel");
   } else {
-    return null;
+    return { message: "Неверный логин или пароль" };
   }
 });
 export let LogoutLoader = makeLoader(async function () {
@@ -336,7 +347,7 @@ function App() {
         {
           path: "about",
           element: <About />,
-          handle: { crumb: () => <Link to="/about">About</Link> },
+          handle: { crumb: () => <Link to="/about">О нас</Link> },
         },
         {
           index: true,
@@ -348,20 +359,20 @@ function App() {
         {
           path: "login",
           element: <Login />,
-          handle: { crumb: () => <Link to="/login">Login</Link> },
+          handle: { crumb: () => <Link to="/login">Войти</Link> },
           action: LoginAction,
           loader: LoginLoader,
         },
         {
           path: "panel",
           element: <UserPanel />,
-          handle: { crumb: () => <Link to="/panel">Panel</Link> },
+          handle: { crumb: () => <Link to="/panel">Панель пользователя</Link> },
           loader: PanelLoader,
         },
         {
           path: "search",
           element: <Search />,
-          handle: { crumb: () => <Link to="/search">Search</Link> },
+          handle: { crumb: () => <Link to="/search">Поиск</Link> },
           action: SearchAction,
         },
         {
@@ -373,25 +384,27 @@ function App() {
           path: "newUser",
           element: <Register />,
           action: RegisterAction,
-          handle: { crumb: () => <Link to="/newUser">Register</Link> },
+          handle: { crumb: () => <Link to="/newUser">Регистрация</Link> },
         },
         {
           path: "admin_panel",
           element: <AdminPanel />,
-          handle: { crumb: () => <Link to="/admin_panel">Admin</Link> },
+          handle: {
+            crumb: () => <Link to="/admin_panel">Администрирование</Link>,
+          },
           loader: AdminLoader,
           action: AdminAction,
         },
         {
           path: "articles",
-          handle: { crumb: () => <Link to="/articles">News</Link> },
+          handle: { crumb: () => <Link to="/articles">Новости</Link> },
           element: <Articles />,
           loader: ArticlesLoader,
         },
         {
           path: "/article/:articleId",
           element: <Article />,
-          handle: { crumb: () => <p>Article</p> },
+          handle: { crumb: () => <p>Статья</p> },
           loader: ArticleLoader,
           action: ArticleAction,
         },

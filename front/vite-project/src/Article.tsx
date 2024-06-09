@@ -4,6 +4,26 @@ import { Form, useSubmit } from "react-router-dom";
 import Cookies from "universal-cookie";
 import axios from "axios";
 
+export function getCont(tag: string): string {
+  switch (tag) {
+    case "eurasia": {
+      return "Евразия";
+    }
+    case "northam": {
+      return "Северная Америка";
+    }
+    case "southam": {
+      return "Южная Америка";
+    }
+    case "africa": {
+      return "Африка";
+    }
+    default: {
+      return "Неизвесный континент";
+    }
+  }
+}
+
 const cookies = new Cookies();
 
 function Article() {
@@ -36,6 +56,7 @@ function Article() {
         {article ? (
           <div className={`flex flex-col w-[100%] gap-3 divide-y`}>
             <h1 className={`text-3xl font-bold`}>{article.name}</h1>
+            <h3 className={`font-bold`}>{getCont(article.cont)}</h3>
             <p className={`text-wrap break-all`}>{article.body}</p>
           </div>
         ) : (

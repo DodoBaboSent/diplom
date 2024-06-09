@@ -27,7 +27,7 @@ function UserPanel() {
   return (
     <>
       <div className={`gap-3 flex flex-col p-3 w-[100%]`}>
-        {data != undefined && data.cod == undefined ? (
+        {data.cod == undefined ? (
           <>
             <h1 className={`text-2xl lg:text-3xl font-bold`}>
               Ваши отслеживаемые города
