@@ -267,6 +267,9 @@ export let PanelLoader = makeLoader(async function () {
     .catch(() => {
       return { admin: false };
     });
+  if (data.cod == 15) {
+    return redirect("/login");
+  }
   return { data, admin };
 });
 
