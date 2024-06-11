@@ -17,7 +17,7 @@ export function Nav(props: NavProps) {
           className={`align-center flex flex-col divide-y whitespace-nowrap drop-shadow-[0_45px_45px_rgba(0,0,0,0.55)] overflow-hidden h-[100%] justify-start w-[75%] bg-white`}
         >
           <div className="flex flex-row p-3">
-            <h1 className="text-2xl basis-10/12 font-bold">Nav</h1>
+            <h1 className="text-2xl basis-10/12 font-bold">Навигация</h1>
             <Link
               to="/"
               onClick={closeNav}
