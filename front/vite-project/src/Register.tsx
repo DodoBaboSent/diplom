@@ -43,7 +43,7 @@ function Register() {
           Зарегистрироваться
         </button>
       </Form>
-      <Link to="/newUser">Войти в уже существующий аккаунт</Link>
+      <Link to="/login">Войти в уже существующий аккаунт</Link>
     </>
   );
 }
