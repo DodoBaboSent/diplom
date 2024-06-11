@@ -58,7 +58,7 @@ function AdminPanel() {
               </div>
               <div className={`flex flex-col gap-2 px-2`}>
                 <p className={`text-pretty text-center`}>Действия</p>
-                <div className={`flex flex-row gap-3`}>
+                <div className={`flex flex-row gap-3 justify-center flex-wrap`}>
                   <a
                     href={`/admin/userdel/${el.ID}`}
                     className={`bg-red-500 p-1 m-1 text-white font-bold`}
@@ -212,7 +212,7 @@ function AdminPanel() {
                 <div className={`flex flex-row gap-2`}>
                   <a
                     href={`/admin/articledel/${el.id}`}
-                    className={`bg-red-500 p-1 m-1 text-white font-bold`}
+                    className={`bg-red-500 p-1 m-1 text-white font-bold justify-content-center flex-wrap`}
                   >
                     Удалить
                   </a>
