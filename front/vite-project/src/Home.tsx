@@ -2,6 +2,7 @@ import axios from "axios";
 import { formatInTimeZone } from "date-fns-tz";
 import { useEffect, useState } from "react";
 import { useActionData, useLoaderData } from "react-router-typesafe";
+import { useNavigate } from "react-router-dom";
 import { IndexAction, IndexLoader } from "./App";
 import Modal from "react-modal";
 import { Form } from "react-router-dom";
@@ -101,6 +102,7 @@ function Home() {
   console.log(data);
 
   const token = cookies.get("token");
+  const navigate = useNavigate();
 
   const actionData = useActionData<typeof IndexAction>();
 
@@ -160,16 +162,16 @@ function Home() {
           } else if (result.state === "prompt") {
             navigator.geolocation.getCurrentPosition(
               async (pos) => {
-                await axios
+                const dat = await axios
                   .get("/weather", {
                     params: {
                       longtitude: pos.coords.longitude,
                       latitude: pos.coords.latitude,
                     },
                   })
-                  .then((res) => {
-                    setWeather(res.data);
-                  });
+                  .then((res) => res.data);
+                setWeather(dat);
+                navigate("/", { replace: true });
               },
               error,
               options,

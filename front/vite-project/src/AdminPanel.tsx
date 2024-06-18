@@ -41,8 +41,8 @@ function AdminPanel() {
                 <p className={`text-pretty`}>{el.Username}</p>
               </div>
               <div className={`flex flex-row gap-2 px-2`}>
-                <p className={`text-pretty`}>Email:</p>
-                <p className={`text-pretty`}>{el.Email}</p>
+                <p className={`text-pretty break-all`}>Email:</p>
+                <p className={`text-pretty break-all`}>{el.Email}</p>
               </div>
               <div className={`flex flex-row gap-2 px-2`}>
                 <p className={`text-pretty`}>Active:</p>
@@ -199,11 +199,13 @@ function AdminPanel() {
             <div className={`flex flex-col gap-2 p-2 w-[100%] lg:hidden`}>
               <div className={`flex flex-row gap-2 px-2`}>
                 <p className={`text-pretty`}>Заголовок: </p>
-                <p className={`text-pretty`}>{el.name}</p>
+                <p className={`text-pretty break-all`}>
+                  {el.name.length > 25 ? `${el.name.slice(0, 25)}...` : el.name}
+                </p>
               </div>
               <div className={`flex flex-row gap-2 px-2`}>
                 <p className={`text-pretty`}>Тело: </p>
-                <p className={`text-pretty`}>
+                <p className={`text-pretty break-all`}>
                   {el.body.length > 25 ? `${el.body.slice(0, 25)}...` : el.body}
                 </p>
               </div>

@@ -50,7 +50,7 @@ export let AdminAction = makeAction(async function ({
     .then(() => true)
     .catch(() => false);
   if (success == true) {
-    return redirect("/admin_panel");
+    return redirect("/articles");
   } else {
     const err: { warning: string } = { warning: "Не удалось создать новость" };
     return err;
